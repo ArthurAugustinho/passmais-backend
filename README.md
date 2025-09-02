@@ -52,7 +52,8 @@ Observações:
 Rotas principais de auth (`/api/auth`):
 - `POST /login` → `{ email, password }` → `{ accessToken, refreshToken }`
 - `POST /refresh` → `{ refreshToken }` → novos tokens
-- `POST /register` → `{ name, email, password, role, lgpdAccepted }`
+- `POST /register` → `{ name, email, password, role, lgpdAccepted, phone? }`
+  - Regra: quando `role = PATIENT`, o campo `phone` é obrigatório.
 
 ## Regras de negócio implementadas
 - Aprovação de médicos e clínicas por `ADMIN/SUPERADMIN`
@@ -91,4 +92,3 @@ src/
 
 ## Licença
 - Defina uma licença conforme sua necessidade (ex.: MIT). Este repositório não inclui LICENSE por padrão.
-

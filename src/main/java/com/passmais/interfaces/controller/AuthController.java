@@ -36,9 +36,13 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<UserResponseDTO> register(@RequestBody @Valid UserCreateDTO dto) {
+        if (dto.role() == com.passmais.domain.enums.Role.PATIENT) {
+            if (dto.phone() == null || dto.phone().isBlank()) {
+                throw new IllegalArgumentException("Telefone é obrigatório para cadastro de paciente");
+            }
+        }
         User user = userMapper.toEntity(dto);
         User saved = authService.register(user, dto.password());
         return ResponseEntity.ok(userMapper.toResponse(saved));
     }
 }
-
