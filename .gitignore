@@ -1,0 +1,26 @@
+# Compilação / Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+dependency-reduced-pom.xml
+
+# IDEs
+.idea/
+*.iml
+.classpath
+.project
+.settings/
+.factorypath
+.apt_generated/
+
+# VS Code
+.vscode/
+
+# SO / temporários
+.DS_Store
+Thumbs.db
+*.log
+logs/
+
+# Ambiente
+.env
+

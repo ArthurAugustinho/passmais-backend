@@ -1,0 +1,102 @@
+package com.passmais.application.service;
+
+import com.passmais.domain.entity.User;
+import com.passmais.infrastructure.repository.UserRepository;
+import com.passmais.infrastructure.security.JwtService;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
+import java.time.Duration;
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
+public class AuthService {
+
+    private final AuthenticationManager authenticationManager;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtService jwtService;
+
+    private static final int MAX_ATTEMPTS = 5;
+    private static final Duration LOCK_DURATION = Duration.ofMinutes(15);
+
+    public AuthService(AuthenticationManager authenticationManager,
+                       UserRepository userRepository,
+                       PasswordEncoder passwordEncoder,
+                       JwtService jwtService) {
+        this.authenticationManager = authenticationManager;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.jwtService = jwtService;
+    }
+
+    public Map<String, String> login(String email, String rawPassword) {
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new BadCredentialsException("Credenciais inválidas"));
+
+        if (user.getAccountLockedUntil() != null && user.getAccountLockedUntil().isAfter(Instant.now())) {
+            throw new BadCredentialsException("Conta bloqueada temporariamente. Tente novamente mais tarde.");
+        }
+
+        try {
+            authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, rawPassword));
+        } catch (BadCredentialsException ex) {
+            int attempts = user.getFailedLoginAttempts() + 1;
+            user.setFailedLoginAttempts(attempts);
+            if (attempts >= MAX_ATTEMPTS) {
+                user.setAccountLockedUntil(Instant.now().plus(LOCK_DURATION));
+                user.setFailedLoginAttempts(0);
+            }
+            userRepository.save(user);
+            throw new BadCredentialsException("Credenciais inválidas");
+        }
+
+        // sucesso: reset tentativas
+        user.setFailedLoginAttempts(0);
+        user.setAccountLockedUntil(null);
+        user.setLastTokenRevalidatedAt(Instant.now());
+        userRepository.save(user);
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getRole().name());
+        String accessToken = jwtService.generateAccessToken(user.getEmail(), claims);
+        String refreshToken = jwtService.generateRefreshToken(user.getEmail());
+
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("accessToken", accessToken);
+        tokens.put("refreshToken", refreshToken);
+        return tokens;
+    }
+
+    public Map<String, String> refresh(String refreshToken) {
+        if (!jwtService.isValid(refreshToken)) {
+            throw new BadCredentialsException("Token de refresh inválido");
+        }
+        String email = jwtService.getSubject(refreshToken);
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new BadCredentialsException("Usuário inválido"));
+
+        // Revalidação a cada 24h: um novo refresh token é emitido e a data é atualizada
+        user.setLastTokenRevalidatedAt(Instant.now());
+        userRepository.save(user);
+
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getRole().name());
+        String newAccessToken = jwtService.generateAccessToken(user.getEmail(), claims);
+        String newRefreshToken = jwtService.generateRefreshToken(user.getEmail());
+
+        Map<String, String> tokens = new HashMap<>();
+        tokens.put("accessToken", newAccessToken);
+        tokens.put("refreshToken", newRefreshToken);
+        return tokens;
+    }
+
+    public User register(User user, String rawPassword) {
+        user.setPassword(passwordEncoder.encode(rawPassword));
+        return userRepository.save(user);
+    }
+}
+
