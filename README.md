@@ -1,6 +1,6 @@
 # Passmais Backend
 
-API RESTful para sistema de agendamento de consultas médicas (Passmais), construída com Java 17 + Spring Boot seguindo Clean Architecture.
+Sistema de agendamento de consultas médicas (Passmais), construída com Java 17 + Spring Boot seguindo Clean Architecture.
 
 ## Stack
 - Java 17, Spring Boot 3
