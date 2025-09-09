@@ -9,11 +9,18 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.validation.BindException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -32,6 +39,57 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         }
         body.put("erros", erros);
         return handleExceptionInternal(ex, body, headers, status, request);
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("mensagem", "Erro de validação");
+        Map<String, String> erros = ex.getConstraintViolations().stream()
+                .collect(Collectors.toMap(v -> v.getPropertyPath().toString(), v -> v.getMessage()));
+        body.put("erros", erros);
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleBindException(BindException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("mensagem", "Erro de validação");
+        Map<String, String> erros = new HashMap<>();
+        for (var error : ex.getBindingResult().getAllErrors()) {
+            String field = error instanceof FieldError fe ? fe.getField() : error.getObjectName();
+            erros.put(field, error.getDefaultMessage());
+        }
+        body.put("erros", erros);
+        return handleExceptionInternal(ex, body, headers, status, request);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpMessageNotReadable(HttpMessageNotReadableException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("mensagem", "Corpo da requisição inválido ou malformado");
+        return handleExceptionInternal(ex, body, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMissingServletRequestParameter(MissingServletRequestParameterException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("mensagem", "Parâmetro obrigatório ausente: " + ex.getParameterName());
+        return handleExceptionInternal(ex, body, headers, HttpStatus.BAD_REQUEST, request);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleHttpRequestMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("mensagem", "Método não suportado: " + ex.getMethod());
+        return handleExceptionInternal(ex, body, headers, HttpStatus.METHOD_NOT_ALLOWED, request);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Object> handleTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("mensagem", "Tipo inválido para parâmetro: " + ex.getName());
+        return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

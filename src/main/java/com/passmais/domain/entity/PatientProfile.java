@@ -2,8 +2,11 @@ package com.passmais.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDate;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -41,4 +44,10 @@ public class PatientProfile {
     @OneToMany(mappedBy = "patient", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<Dependent> dependents = new HashSet<>();
+
+    @CreationTimestamp
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    private Instant updatedAt;
 }

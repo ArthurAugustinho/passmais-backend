@@ -2,6 +2,8 @@ package com.passmais.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -32,6 +34,25 @@ public class DoctorProfile {
 
     @Column(length = 500)
     private String bio;
+
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 14, unique = true)
+    private String cpf;
+
+    private java.time.LocalDate birthDate;
+
+    @Column(length = 255)
+    private String photoUrl;
+
+    private java.math.BigDecimal consultationPrice;
+
+    @CreationTimestamp
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    private Instant updatedAt;
 
     @Column(nullable = false)
     @Builder.Default

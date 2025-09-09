@@ -39,6 +39,11 @@ public class User {
 
     private Instant lgpdAcceptedAt;
 
+    private Instant emailVerifiedAt;
+
+    @Column(length = 64)
+    private String verificationCode;
+
     @CreationTimestamp
     private Instant createdAt;
 

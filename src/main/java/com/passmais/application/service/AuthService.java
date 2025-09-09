@@ -1,6 +1,7 @@
 package com.passmais.application.service;
 
 import com.passmais.domain.entity.User;
+import com.passmais.domain.enums.Role;
 import com.passmais.infrastructure.repository.UserRepository;
 import com.passmais.infrastructure.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,8 +23,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
 
-    private static final int MAX_ATTEMPTS = 5;
-    private static final Duration LOCK_DURATION = Duration.ofMinutes(15);
+    // Bloqueio por tentativas desativado
 
     public AuthService(AuthenticationManager authenticationManager,
                        UserRepository userRepository,
@@ -38,26 +38,27 @@ public class AuthService {
     public Map<String, String> login(String email, String rawPassword) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new BadCredentialsException("Credenciais inválidas"));
 
-        if (user.getAccountLockedUntil() != null && user.getAccountLockedUntil().isAfter(Instant.now())) {
-            throw new BadCredentialsException("Conta bloqueada temporariamente. Tente novamente mais tarde.");
+        // Sem verificação de bloqueio por tentativas
+
+        // Verificação de e-mail: pacientes e médicos podem logar sem verificar e-mail
+        if (user.getEmailVerifiedAt() == null) {
+            if (!(user.getRole() == Role.PATIENT || user.getRole() == Role.DOCTOR)) {
+                throw new BadCredentialsException("E-mail não verificado");
+            }
         }
 
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, rawPassword));
         } catch (BadCredentialsException ex) {
-            int attempts = user.getFailedLoginAttempts() + 1;
-            user.setFailedLoginAttempts(attempts);
-            if (attempts >= MAX_ATTEMPTS) {
-                user.setAccountLockedUntil(Instant.now().plus(LOCK_DURATION));
-                user.setFailedLoginAttempts(0);
-            }
+            // Apenas registra tentativa falha sem bloquear a conta
+            user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
             userRepository.save(user);
             throw new BadCredentialsException("Credenciais inválidas");
         }
 
         // sucesso: reset tentativas
         user.setFailedLoginAttempts(0);
-        user.setAccountLockedUntil(null);
+        user.setAccountLockedUntil(null); // redundante, mas mantém compatibilidade
         user.setLastTokenRevalidatedAt(Instant.now());
         userRepository.save(user);
 
@@ -99,4 +100,3 @@ public class AuthService {
         return userRepository.save(user);
     }
 }
-

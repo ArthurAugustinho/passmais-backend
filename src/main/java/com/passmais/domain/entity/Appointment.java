@@ -3,6 +3,8 @@ package com.passmais.domain.entity;
 import com.passmais.domain.enums.AppointmentStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -48,4 +50,10 @@ public class Appointment {
     private AppointmentStatus status = AppointmentStatus.PENDING;
 
     private BigDecimal value;
+
+    @CreationTimestamp
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    private Instant updatedAt;
 }

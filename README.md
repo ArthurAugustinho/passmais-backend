@@ -45,7 +45,8 @@ Observações:
 ## Segurança / Autenticação
 - Login por e‑mail e senha com JWT
 - Senhas armazenadas com BCrypt
-- Bloqueio temporário após 5 tentativas inválidas (15 min)
+  
+Observação: bloqueio por tentativas foi desativado nesta versão.
 - Revalidação de refresh token a cada 24h
 - Controle de acesso com `@PreAuthorize` por role (`PATIENT`, `DOCTOR`, `CLINIC`, `ADMIN`, `SUPERADMIN`)
 

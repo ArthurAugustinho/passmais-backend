@@ -5,6 +5,9 @@ import com.passmais.domain.entity.DoctorProfile;
 import com.passmais.domain.entity.PatientProfile;
 import com.passmais.domain.enums.AppointmentStatus;
 import com.passmais.infrastructure.repository.AppointmentRepository;
+import com.passmais.infrastructure.repository.NotificationRepository;
+import com.passmais.domain.entity.Notification;
+import com.passmais.domain.enums.NotificationType;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
@@ -17,11 +20,13 @@ import java.util.List;
 public class AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
+    private final NotificationRepository notificationRepository;
     private static final int MAX_RESCHEDULES_IN_30_DAYS = 2;
     private static final Duration CANCEL_MIN_NOTICE = Duration.ofHours(6); // antecedência mínima de cancelamento: 6h
 
-    public AppointmentService(AppointmentRepository appointmentRepository) {
+    public AppointmentService(AppointmentRepository appointmentRepository, NotificationRepository notificationRepository) {
         this.appointmentRepository = appointmentRepository;
+        this.notificationRepository = notificationRepository;
     }
 
     public Appointment schedule(DoctorProfile doctor, PatientProfile patient, Instant dateTime) {
@@ -39,7 +44,21 @@ public class AppointmentService {
                 .dateTime(dateTime)
                 .status(AppointmentStatus.PENDING)
                 .build();
-        return appointmentRepository.save(appt);
+        Appointment saved = appointmentRepository.save(appt);
+        // notifications: doctor and patient
+        Notification n1 = Notification.builder()
+                .user(doctor.getUser())
+                .type(NotificationType.NEW_APPOINTMENT)
+                .content("Novo agendamento em " + dateTime)
+                .build();
+        Notification n2 = Notification.builder()
+                .user(patient.getUser())
+                .type(NotificationType.NEW_APPOINTMENT)
+                .content("Sua consulta foi agendada para " + dateTime)
+                .build();
+        notificationRepository.save(n1);
+        notificationRepository.save(n2);
+        return saved;
     }
 
     public Appointment reschedule(Appointment original, Instant newDateTime) {
@@ -64,7 +83,20 @@ public class AppointmentService {
             throw new IllegalArgumentException("Cancelamento permitido apenas com antecedência mínima");
         }
         appt.setStatus(AppointmentStatus.CANCELED);
-        return appointmentRepository.save(appt);
+        Appointment saved = appointmentRepository.save(appt);
+        Notification n1 = Notification.builder()
+                .user(appt.getDoctor().getUser())
+                .type(NotificationType.CANCELLATION)
+                .content("Agendamento cancelado para " + appt.getDateTime())
+                .build();
+        Notification n2 = Notification.builder()
+                .user(appt.getPatient().getUser())
+                .type(NotificationType.CANCELLATION)
+                .content("Sua consulta foi cancelada: " + appt.getObservations())
+                .build();
+        notificationRepository.save(n1);
+        notificationRepository.save(n2);
+        return saved;
     }
 
     public Appointment markDone(Appointment appt) {

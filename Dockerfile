@@ -4,9 +4,16 @@
 FROM maven:3.9.8-eclipse-temurin-17 AS build
 WORKDIR /app
 
-# Copy sources and build (skip tests for faster container builds)
-COPY . .
-RUN mvn -B -DskipTests clean package
+# 1) Cache dependencies in a separate layer for faster, resilient builds
+COPY pom.xml ./
+# Optionally copy additional build config if present (kept harmless if absent)
+# COPY .mvn/ .mvn/
+# COPY mvnw ./
+RUN mvn -B -DskipTests -Dmaven.wagon.http.retryHandler.count=3 dependency:go-offline
+
+# 2) Copy sources and build (skip tests for faster container builds)
+COPY src ./src
+RUN mvn -B -DskipTests -Dmaven.wagon.http.retryHandler.count=3 clean package
 
 # 2) Runtime stage
 FROM eclipse-temurin:17-jre

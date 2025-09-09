@@ -6,6 +6,7 @@ import com.passmais.domain.entity.PatientProfile;
 import com.passmais.domain.enums.AppointmentStatus;
 import com.passmais.infrastructure.repository.AppointmentRepository;
 import org.junit.jupiter.api.BeforeEach;
+import com.passmais.infrastructure.repository.NotificationRepository;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
@@ -20,11 +21,13 @@ public class AppointmentServiceTest {
 
     private AppointmentRepository repo;
     private AppointmentService service;
+    private NotificationRepository notificationRepository;
 
     @BeforeEach
     void setup() {
         repo = Mockito.mock(AppointmentRepository.class);
-        service = new AppointmentService(repo);
+        notificationRepository = Mockito.mock(NotificationRepository.class);
+        service = new AppointmentService(repo, notificationRepository);
     }
 
     @Test

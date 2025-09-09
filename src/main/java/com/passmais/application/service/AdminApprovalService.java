@@ -33,5 +33,18 @@ public class AdminApprovalService {
         c.setApprovedAt(Instant.now());
         return clinicRepo.save(c);
     }
-}
 
+    public DoctorProfile rejectDoctor(UUID doctorId) {
+        DoctorProfile d = doctorRepo.findById(doctorId).orElseThrow();
+        d.setApproved(false);
+        d.setApprovedAt(null);
+        return doctorRepo.save(d);
+    }
+
+    public Clinic rejectClinic(UUID clinicId) {
+        Clinic c = clinicRepo.findById(clinicId).orElseThrow();
+        c.setApproved(false);
+        c.setApprovedAt(null);
+        return clinicRepo.save(c);
+    }
+}
