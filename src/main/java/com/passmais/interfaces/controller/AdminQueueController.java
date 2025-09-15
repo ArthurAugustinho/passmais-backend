@@ -34,7 +34,7 @@ public class AdminQueueController {
         this.auditLogRepository = auditLogRepository;
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping("/doctor/{doctorId}/today")
     public ResponseEntity<List<Appointment>> listTodayQueue(@PathVariable UUID doctorId) {
         DoctorProfile doctor = doctorProfileRepository.findById(doctorId).orElseThrow();
@@ -48,7 +48,7 @@ public class AdminQueueController {
         return ResponseEntity.ok(list);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping("/reorder")
     public ResponseEntity<Appointment> reorder(
             @RequestParam UUID appointmentId,
@@ -67,7 +67,7 @@ public class AdminQueueController {
         return ResponseEntity.ok(saved);
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping("/remove/{appointmentId}")
     public ResponseEntity<Map<String, Object>> remove(@PathVariable UUID appointmentId, @RequestParam @NotNull UUID adminUserId, @RequestParam(required = false) String reason) {
         Appointment appt = appointmentRepository.findById(appointmentId).orElseThrow();
@@ -82,4 +82,3 @@ public class AdminQueueController {
         return ResponseEntity.ok(Map.of("status", "removed"));
     }
 }
-

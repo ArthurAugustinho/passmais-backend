@@ -32,7 +32,7 @@ public class AdminDashboardController {
         this.clinicRepository = clinicRepository;
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping
     public ResponseEntity<Map<String, Object>> overview() {
         long totalPatients = userRepository.findAll().stream().filter(u -> u.getRole() == Role.PATIENT).count();
@@ -51,4 +51,3 @@ public class AdminDashboardController {
         return ResponseEntity.ok(resp);
     }
 }
-

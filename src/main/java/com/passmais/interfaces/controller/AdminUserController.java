@@ -27,11 +27,11 @@ public class AdminUserController {
         this.auditLogRepository = auditLogRepository;
     }
 
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping
     public ResponseEntity<User> create(@RequestBody AdminUserCreateDTO dto) {
-        if (dto.role() != Role.ADMIN && dto.role() != Role.ADMINISTRATOR && dto.role() != Role.SUPERADMIN) {
-            throw new IllegalArgumentException("Somente criação de ADMIN/ADMINISTRATOR/SUPERADMIN neste endpoint");
+        if (dto.role() != Role.ADMINISTRATOR) {
+            throw new IllegalArgumentException("Somente criação de ADMINISTRATOR neste endpoint");
         }
         User u = User.builder()
                 .name(dto.name())
@@ -44,7 +44,7 @@ public class AdminUserController {
         return ResponseEntity.ok(saved);
     }
 
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable UUID id) {
         userRepository.deleteById(id);
@@ -52,12 +52,12 @@ public class AdminUserController {
         return ResponseEntity.noContent().build();
     }
 
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PutMapping("/{id}")
     public ResponseEntity<User> update(@PathVariable UUID id, @RequestBody AdminUserCreateDTO dto) {
         User u = userRepository.findById(id).orElseThrow();
-        if (dto.role() != Role.ADMIN && dto.role() != Role.ADMINISTRATOR && dto.role() != Role.SUPERADMIN) {
-            throw new IllegalArgumentException("Somente ADMIN/ADMINISTRATOR/SUPERADMIN");
+        if (dto.role() != Role.ADMINISTRATOR) {
+            throw new IllegalArgumentException("Somente ADMINISTRATOR");
         }
         u.setName(dto.name());
         u.setEmail(dto.email());
