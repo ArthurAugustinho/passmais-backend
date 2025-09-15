@@ -25,13 +25,13 @@ public class ReviewModerationController {
         this.moderationLogRepository = moderationLogRepository;
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping
     public ResponseEntity<List<Review>> listAll() {
         return ResponseEntity.ok(reviewRepository.findAll());
     }
 
-    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping("/{id}/status")
     public ResponseEntity<Review> setStatus(@PathVariable UUID id, @RequestParam @NotNull ReviewStatus status, @RequestParam(name = "adminUserId") UUID adminUserId) {
         Review r = reviewRepository.findById(id).orElseThrow();
@@ -46,4 +46,3 @@ public class ReviewModerationController {
         return ResponseEntity.ok(saved);
     }
 }
-

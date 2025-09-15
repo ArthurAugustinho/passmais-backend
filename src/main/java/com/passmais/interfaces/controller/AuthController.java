@@ -52,10 +52,8 @@ public class AuthController {
                 throw new IllegalArgumentException("Telefone é obrigatório para cadastro de paciente");
             }
         }
-        if (dto.role() == com.passmais.domain.enums.Role.ADMIN ||
-            dto.role() == com.passmais.domain.enums.Role.ADMINISTRATOR ||
-            dto.role() == com.passmais.domain.enums.Role.SUPERADMIN) {
-            throw new IllegalArgumentException("Criação de administradores deve ser feita por SUPERADMIN em endpoint dedicado");
+        if (dto.role() == com.passmais.domain.enums.Role.ADMINISTRATOR) {
+            throw new IllegalArgumentException("Criação de administradores deve ser feita no endpoint dedicado");
         }
         User user = userMapper.toEntity(dto);
         User saved = authService.register(user, dto.password());

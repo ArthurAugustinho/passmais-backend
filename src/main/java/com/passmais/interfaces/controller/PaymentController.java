@@ -50,7 +50,7 @@ public class PaymentController {
         return ResponseEntity.ok(paymentRepository.save(p));
     }
 
-    @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','ADMINISTRATOR')")
     @GetMapping("/{paymentId}")
     public ResponseEntity<Payment> get(@PathVariable UUID paymentId) {
         return ResponseEntity.ok(paymentRepository.findById(paymentId).orElseThrow());
@@ -74,4 +74,3 @@ public class PaymentController {
                 .body(bytes);
     }
 }
-

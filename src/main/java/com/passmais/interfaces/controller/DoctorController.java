@@ -5,6 +5,7 @@ import com.passmais.infrastructure.repository.DoctorProfileRepository;
 import com.passmais.infrastructure.repository.AppointmentRepository;
 import com.passmais.infrastructure.repository.ReviewRepository;
 import com.passmais.interfaces.dto.DoctorPublicProfileDTO;
+import com.passmais.interfaces.dto.PendingDoctorDTO;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -27,6 +28,21 @@ public class DoctorController {
         this.doctorRepo = doctorRepo;
         this.reviewRepository = reviewRepository;
         this.appointmentRepository = appointmentRepository;
+    }
+
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
+    @GetMapping("/pending")
+    public ResponseEntity<java.util.List<PendingDoctorDTO>> listPending() {
+        java.util.List<DoctorProfile> list = doctorRepo.findByApprovedAtIsNull();
+        java.util.List<PendingDoctorDTO> resp = list.stream().map(d -> new PendingDoctorDTO(
+                d.getId(),
+                d.getUser().getName(),
+                d.getSpecialty(),
+                d.getCrm(),
+                d.getCreatedAt(),
+                d.getApprovedAt()
+        )).toList();
+        return ResponseEntity.ok(resp);
     }
 
     @GetMapping("/search")

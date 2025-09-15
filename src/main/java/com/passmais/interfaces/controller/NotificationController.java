@@ -23,7 +23,7 @@ public class NotificationController {
         this.userRepository = userRepository;
     }
 
-    @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('PATIENT','DOCTOR','ADMINISTRATOR')")
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<Notification>> listByUser(@PathVariable UUID userId) {
         User user = userRepository.findById(userId).orElseThrow();
@@ -31,4 +31,3 @@ public class NotificationController {
         return ResponseEntity.ok(list);
     }
 }
-
