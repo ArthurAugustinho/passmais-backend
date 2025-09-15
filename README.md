@@ -22,10 +22,6 @@ API RESTful para sistema de agendamento de consultas médicas (Passmais), constr
 - JDK 17
 - Maven 3.9+
 
-## Como rodar
-1) Subir PostgreSQL com Docker (porta do host: 5433):
-   - `docker compose up -d db`
-
 2) (Opcional) Definir variáveis (PowerShell):
    - `$env:JWT_SECRET = '<seu-segredo-jwt-com-32+ caracteres>'`
    - `$env:DB_USERNAME = 'passmais'`
@@ -33,7 +29,9 @@ API RESTful para sistema de agendamento de consultas médicas (Passmais), constr
    - `$env:SPRING_DATASOURCE_URL = 'jdbc:postgresql://localhost:5433/passmais'`
 
 3) Rodar a aplicação:
-   - `mvn spring-boot:run`
+```bash
+   docker compose up -d --build
+```
 
 4) Swagger/OpenAPI:
    - `http://localhost:8080/swagger-ui.html`
