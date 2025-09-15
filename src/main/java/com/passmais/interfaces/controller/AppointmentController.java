@@ -57,7 +57,7 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentMapper.toResponse(updated));
     }
 
-    @PreAuthorize("hasAnyRole('PATIENT','ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('PATIENT','ADMINISTRATOR')")
     @PostMapping("/{id}/cancel")
     public ResponseEntity<AppointmentResponseDTO> cancel(@PathVariable UUID id) {
         Appointment appt = appointmentRepository.findById(id).orElseThrow();
@@ -89,7 +89,7 @@ public class AppointmentController {
         return ResponseEntity.ok(appointmentMapper.toResponse(appointmentRepository.save(appt)));
     }
 
-    @PreAuthorize("hasAnyRole('DOCTOR','ADMIN','SUPERADMIN','PATIENT')")
+    @PreAuthorize("hasAnyRole('DOCTOR','ADMINISTRATOR','PATIENT')")
     @PostMapping("/{id}/cancel-with-reason")
     public ResponseEntity<AppointmentResponseDTO> cancelWithReason(@PathVariable UUID id, @RequestBody @Valid AppointmentCancelDTO dto) {
         Appointment appt = appointmentRepository.findById(id).orElseThrow();
@@ -108,7 +108,7 @@ public class AppointmentController {
         return ResponseEntity.ok(list.stream().map(appointmentMapper::toResponse).toList());
     }
 
-    @PreAuthorize("hasAnyRole('PATIENT','ADMIN','SUPERADMIN')")
+    @PreAuthorize("hasAnyRole('PATIENT','ADMINISTRATOR')")
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<List<AppointmentResponseDTO>> listForPatient(@PathVariable UUID patientId, @RequestParam(name = "status", required = false) com.passmais.domain.enums.AppointmentStatus status) {
         PatientProfile patient = patientRepo.findById(patientId).orElseThrow();
