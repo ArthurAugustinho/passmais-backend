@@ -1,8 +1,10 @@
 package com.passmais.infrastructure.config;
 
 import com.passmais.infrastructure.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -23,6 +25,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
 
+    @Value("${cors.allowed-origins:https://www.passmais.com.br}")
+    private String[] allowedOrigins;
+
     public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
         this.jwtFilter = jwtFilter;
     }
@@ -34,11 +39,10 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/auth/**").permitAll()
-                    .requestMatchers("/api/registration/**").permitAll()
-                    .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()
-                    .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
-                    .anyRequest().authenticated()
+                .requestMatchers("/api/auth/**", "/api/registration/**").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").hasRole("ADMIN") // Restrict in prod
+                .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
+                .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
@@ -57,20 +61,13 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        // Origens permitidas para desenvolvimento (Next.js)
-        config.addAllowedOrigin("http://localhost:3000");
-        config.addAllowedOrigin("http://127.0.0.1:3000");
-        // Acesso via IP na rede local (dev em dispositivos na mesma rede)
-        config.addAllowedOrigin("http://192.168.3.58:3000");
-        // Padrão para qualquer IP da sub-rede 192.168.* na porta 3000
-        config.addAllowedOriginPattern("http://192.168.*:3000");
-        // Permitir todos os métodos HTTP
+        for (String origin : allowedOrigins) {
+            config.addAllowedOrigin(origin);
+        }
+        config.addAllowedOriginPattern("http://192.168.*:3000"); // For dev only, consider profiles
         config.addAllowedMethod("*");
-        // Cabeçalhos comuns (ou libere todos)
         config.addAllowedHeader("*");
-        // Caso use cookies/credenciais entre domínios
         config.setAllowCredentials(true);
-        // Expor cabeçalhos se necessário
         config.addExposedHeader("Authorization");
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
