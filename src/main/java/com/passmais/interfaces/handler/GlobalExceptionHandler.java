@@ -21,6 +21,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.validation.BindException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.core.NestedExceptionUtils;
 
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -49,6 +51,58 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 .collect(Collectors.toMap(v -> v.getPropertyPath().toString(), v -> v.getMessage()));
         body.put("erros", erros);
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<Object> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String message = "Violação de integridade de dados";
+
+        String constraintName = null;
+        Throwable cause = ex.getCause();
+        if (cause instanceof org.hibernate.exception.ConstraintViolationException hce) {
+            constraintName = hce.getConstraintName();
+        }
+
+        if (constraintName != null) {
+            message = translateConstraint(constraintName);
+        } else {
+            String details = NestedExceptionUtils.getMostSpecificCause(ex).getMessage();
+            message = translateFromDetails(details);
+        }
+
+        Map<String, Object> body = new HashMap<>();
+        body.put("mensagem", message);
+        return new ResponseEntity<>(body, HttpStatus.CONFLICT);
+    }
+
+    private String translateConstraint(String constraintName) {
+        if (constraintName == null) return "Violação de integridade de dados";
+        return switch (constraintName) {
+            case "users_email_key" -> "E-mail já cadastrado";
+            case "uk_doctor_profiles_phone", "uk_patient_profiles_cell_phone" -> "Telefone já utilizado";
+            default -> "Registro já existe";
+        };
+    }
+
+    private String translateFromDetails(String details) {
+        if (details == null) return "Violação de integridade de dados";
+        String lower = details.toLowerCase();
+        if (lower.contains("users_email_key") || lower.contains("(email)")) {
+            return "E-mail já cadastrado";
+        }
+        if (lower.contains("uk_doctor_profiles_phone") || lower.contains("uk_patient_profiles_cell_phone") || lower.contains("(phone)") || lower.contains("(cell_phone)")) {
+            return "Telefone já utilizado";
+        }
+        if (lower.contains("cpf")) {
+            return "CPF já utilizado";
+        }
+        if (lower.contains("crm")) {
+            return "CRM já utilizado";
+        }
+        if (lower.contains("23505") || lower.contains("duplicate key") || lower.contains("unique")) {
+            return "Registro já existe";
+        }
+        return "Violação de integridade de dados";
     }
 
     @Override
