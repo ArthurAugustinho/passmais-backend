@@ -25,7 +25,7 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping("/approve/doctor/{id}")
-    public ResponseEntity<com.passmais.interfaces.dto.ApproveDoctorResponseDTO> approveDoctor(@PathVariable UUID id) {
+    public ResponseEntity<com.passmais.interfaces.dto.ApproveDoctorResponseDTO> approveDoctor(@PathVariable("id") UUID id) {
         DoctorProfile saved = adminApprovalService.approveDoctor(id);
         var body = new com.passmais.interfaces.dto.ApproveDoctorResponseDTO(
                 "Médico aprovado com sucesso",
@@ -36,7 +36,7 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping("/approve/clinic/{id}")
-    public ResponseEntity<com.passmais.interfaces.dto.ApproveClinicResponseDTO> approveClinic(@PathVariable UUID id) {
+    public ResponseEntity<com.passmais.interfaces.dto.ApproveClinicResponseDTO> approveClinic(@PathVariable("id") UUID id) {
         Clinic saved = adminApprovalService.approveClinic(id);
         var body = new com.passmais.interfaces.dto.ApproveClinicResponseDTO(
                 "Clínica aprovada com sucesso",
@@ -47,7 +47,7 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping("/reject/doctor/{id}")
-    public ResponseEntity<com.passmais.interfaces.dto.RejectDoctorResponseDTO> rejectDoctor(@PathVariable UUID id, @RequestParam UUID adminUserId, @RequestParam(required = false) String reason) {
+    public ResponseEntity<com.passmais.interfaces.dto.RejectDoctorResponseDTO> rejectDoctor(@PathVariable("id") UUID id, @RequestParam(name = "adminUserId") UUID adminUserId, @RequestParam(name = "reason", required = false) String reason) {
         adminApprovalService.rejectDoctor(id);
         auditLogRepository.save(AuditLog.builder().actorUserId(adminUserId).action("DOCTOR_REJECT").details("Doctor " + id + " rejected: " + reason).build());
         java.time.Instant now = java.time.Instant.now();
@@ -60,7 +60,7 @@ public class AdminController {
 
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @PostMapping("/reject/clinic/{id}")
-    public ResponseEntity<com.passmais.interfaces.dto.RejectClinicResponseDTO> rejectClinic(@PathVariable UUID id, @RequestParam UUID adminUserId, @RequestParam(required = false) String reason) {
+    public ResponseEntity<com.passmais.interfaces.dto.RejectClinicResponseDTO> rejectClinic(@PathVariable("id") UUID id, @RequestParam(name = "adminUserId") UUID adminUserId, @RequestParam(name = "reason", required = false) String reason) {
         adminApprovalService.rejectClinic(id);
         auditLogRepository.save(AuditLog.builder().actorUserId(adminUserId).action("CLINIC_REJECT").details("Clinic " + id + " rejected: " + reason).build());
         java.time.Instant now = java.time.Instant.now();
