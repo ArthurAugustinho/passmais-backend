@@ -24,6 +24,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Verificar diretório de trabalho
+        run: pwd
+
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -42,7 +46,7 @@ jobs:
           ECR_REPOSITORY: ${{ env.ECR_REPOSITORY }}
           IMAGE_TAG: backend
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f ~/passmais-backend/Dockerfile ./
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -f ./passmais-backend/Dockerfile ./passmais-backend
           docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
           echo "::set-output name=image::$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
