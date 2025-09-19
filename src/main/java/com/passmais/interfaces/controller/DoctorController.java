@@ -33,7 +33,7 @@ public class DoctorController {
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping("/pending")
     public ResponseEntity<java.util.List<PendingDoctorDTO>> listPending() {
-        java.util.List<DoctorProfile> list = doctorRepo.findByApprovedAtIsNull();
+        java.util.List<DoctorProfile> list = doctorRepo.findByApprovedAtIsNullAndRejectedAtIsNull();
         java.util.List<PendingDoctorDTO> resp = list.stream().map(d -> new PendingDoctorDTO(
                 d.getId(),
                 d.getUser().getName(),

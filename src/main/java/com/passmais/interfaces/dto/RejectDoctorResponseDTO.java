@@ -11,7 +11,7 @@ public record RejectDoctorResponseDTO(
 ) {
     public record Doctor(
             UUID id,
-            @JsonProperty("rejected_at") Instant rejectedAt
+            @JsonProperty("rejected_at") Instant rejectedAt,
+            @JsonProperty("failure_description") String failureDescription
     ) {}
 }
-

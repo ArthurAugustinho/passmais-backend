@@ -11,5 +11,5 @@ public interface DoctorProfileRepository extends JpaRepository<DoctorProfile, UU
     boolean existsByCpf(String cpf);
     boolean existsByCrm(String crm);
     boolean existsByPhone(String phone);
-    List<DoctorProfile> findByApprovedAtIsNull();
+    List<DoctorProfile> findByApprovedAtIsNullAndRejectedAtIsNull();
 }

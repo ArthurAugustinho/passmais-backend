@@ -29,7 +29,7 @@ public class AdminPendingController {
     @PreAuthorize("hasRole('ADMINISTRATOR')")
     @GetMapping("/doctors")
     public ResponseEntity<List<PendingDoctorDTO>> listPendingDoctors() {
-        List<DoctorProfile> list = doctorRepo.findByApprovedAtIsNull();
+        List<DoctorProfile> list = doctorRepo.findByApprovedAtIsNullAndRejectedAtIsNull();
         List<PendingDoctorDTO> resp = list.stream().map(d -> new PendingDoctorDTO(
                 d.getId(),
                 d.getUser().getName(),
