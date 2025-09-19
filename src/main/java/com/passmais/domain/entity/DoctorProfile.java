@@ -60,6 +60,11 @@ public class DoctorProfile {
 
     private Instant approvedAt;
 
+    private Instant rejectedAt;
+
+    @Column(length = 500)
+    private String failureDescription;
+
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private Set<Availability> availabilities = new HashSet<>();
