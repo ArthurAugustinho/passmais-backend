@@ -50,7 +50,10 @@ public class DoctorController {
         List<DoctorProfile> list = specialty == null || specialty.isBlank()
                 ? doctorRepo.findAll()
                 : doctorRepo.findBySpecialtyContainingIgnoreCase(specialty);
-        List<DoctorPublicProfileDTO> dtos = list.stream().map(this::toPublic).toList();
+        List<DoctorPublicProfileDTO> dtos = list.stream()
+                .filter(DoctorProfile::isApproved)
+                .map(this::toPublic)
+                .toList();
         return ResponseEntity.ok(dtos);
     }
 
@@ -77,6 +80,7 @@ public class DoctorController {
         d.setBio(dto.bio());
         d.setSpecialty(dto.specialty());
         d.setCrm(dto.crm());
+        d.setConsultationPrice(dto.consultationPrice());
         DoctorProfile saved = doctorRepo.save(d);
         return ResponseEntity.ok(toPublic(saved));
     }
@@ -84,7 +88,17 @@ public class DoctorController {
     private DoctorPublicProfileDTO toPublic(DoctorProfile d) {
         Double avg = reviewRepository.averageForDoctor(d).orElse(null);
         long count = reviewRepository.countApprovedForDoctor(d);
-        return new DoctorPublicProfileDTO(d.getId(), d.getUser().getName(), d.getCrm(), d.getSpecialty(), d.getBio(), avg, count);
+        return new DoctorPublicProfileDTO(
+                d.getId(),
+                d.getUser().getName(),
+                d.getCrm(),
+                d.getSpecialty(),
+                d.getBio(),
+                d.getPhotoUrl(),
+                d.getConsultationPrice(),
+                avg,
+                count
+        );
     }
 
     @PreAuthorize("hasRole('DOCTOR')")
