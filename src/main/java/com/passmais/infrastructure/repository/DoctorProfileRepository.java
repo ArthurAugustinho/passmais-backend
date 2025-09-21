@@ -4,6 +4,7 @@ import com.passmais.domain.entity.DoctorProfile;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface DoctorProfileRepository extends JpaRepository<DoctorProfile, UUID> {
@@ -12,4 +13,5 @@ public interface DoctorProfileRepository extends JpaRepository<DoctorProfile, UU
     boolean existsByCrm(String crm);
     boolean existsByPhone(String phone);
     List<DoctorProfile> findByApprovedAtIsNullAndRejectedAtIsNull();
+    Optional<DoctorProfile> findByUserId(UUID userId);
 }

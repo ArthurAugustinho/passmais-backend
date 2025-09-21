@@ -1,6 +1,7 @@
 package com.passmais.interfaces.controller;
 
 import com.passmais.application.service.AuthService;
+import com.passmais.application.service.S3StorageService;
 import com.passmais.domain.entity.DoctorProfile;
 import com.passmais.domain.entity.PatientProfile;
 import com.passmais.domain.entity.User;
@@ -32,18 +33,50 @@ public class RegistrationController {
     private final DoctorProfileRepository doctorProfileRepository;
     private final PatientProfileRepository patientProfileRepository;
     private final EmailService emailService;
+    private final S3StorageService s3StorageService;
 
-    public RegistrationController(AuthService authService, UserRepository userRepository, DoctorProfileRepository doctorProfileRepository, PatientProfileRepository patientProfileRepository, EmailService emailService) {
+    public RegistrationController(AuthService authService, UserRepository userRepository, DoctorProfileRepository doctorProfileRepository, PatientProfileRepository patientProfileRepository, EmailService emailService, S3StorageService s3StorageService) {
         this.authService = authService;
         this.userRepository = userRepository;
         this.doctorProfileRepository = doctorProfileRepository;
         this.patientProfileRepository = patientProfileRepository;
         this.emailService = emailService;
+        this.s3StorageService = s3StorageService;
     }
 
     @PostMapping("/doctor")
     @Transactional
     public ResponseEntity<Map<String, Object>> registerDoctor(@RequestBody @Valid DoctorRegisterDTO dto) {
+        Map<String, Object> response = registerDoctorInternal(dto);
+        return ResponseEntity.ok(response);
+    }
+
+    @PostMapping(value = "/doctor", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Transactional
+    public ResponseEntity<Map<String, Object>> registerDoctorMultipart(
+            @RequestPart("doctor") @Valid DoctorRegisterDTO dto,
+            @RequestPart("photoUrl") MultipartFile image
+    ) {
+        if (image == null || image.isEmpty()) {
+            throw new IllegalArgumentException("Nenhum arquivo de imagem enviado.");
+        }
+
+        Map<String, Object> response = registerDoctorInternal(dto);
+        UUID userId = (UUID) response.get("userId");
+        DoctorProfile profile = doctorProfileRepository.findByUserId(userId).orElseThrow();
+
+        try {
+            String photoUrl = s3StorageService.uploadDoctorPhoto(image, profile.getId());
+            profile.setPhotoUrl(photoUrl);
+            doctorProfileRepository.save(profile);
+        } catch (java.io.IOException ex) {
+            throw new IllegalStateException("Erro ao carregar a imagem para o S3", ex);
+        }
+
+        return ResponseEntity.ok(response);
+    }
+
+    private Map<String, Object> registerDoctorInternal(DoctorRegisterDTO dto) {
         if (!Boolean.TRUE.equals(dto.lgpdAccepted())) {
             throw new IllegalArgumentException("Aceite da LGPD é obrigatório");
         }
@@ -96,10 +129,10 @@ public class RegistrationController {
         doctorProfileRepository.save(profile);
 
         emailService.sendVerificationEmail(user.getEmail(), code);
-        return ResponseEntity.ok(Map.of(
+        return Map.of(
                 "userId", user.getId(),
                 "verificationCode", code
-        ));
+        );
     }
 
     @PostMapping("/patient")
@@ -159,42 +192,5 @@ public class RegistrationController {
         return ResponseEntity.noContent().build();
     }
 
-    // Multipart alternative that accepts photo upload
-    @PostMapping(value = "/doctor/form", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @Transactional
-    public ResponseEntity<Map<String, Object>> registerDoctorForm(
-            @RequestParam String name,
-            @RequestParam String email,
-            @RequestParam String password,
-            @RequestParam String confirmPassword,
-            @RequestParam Boolean lgpdAccepted,
-            @RequestParam String crm,
-            @RequestParam String phone,
-            @RequestParam String cpf,
-            @RequestParam String birthDate,
-            @RequestParam(required = false) String bio,
-            @RequestParam(required = false) String specialty,
-            @RequestParam(required = false) java.math.BigDecimal consultationPrice,
-            @RequestPart(required = false) MultipartFile photo
-    ) throws java.io.IOException {
-        DoctorRegisterDTO dto = new DoctorRegisterDTO(
-                name, email, password, confirmPassword, lgpdAccepted, crm, phone, cpf,
-                java.time.LocalDate.parse(birthDate), bio, specialty, consultationPrice, null
-        );
-        var resp = registerDoctor(dto).getBody();
-        // Save photo if present
-        if (photo != null && !photo.isEmpty()) {
-            UUID userId = (UUID) resp.get("userId");
-            User user = userRepository.findById(userId).orElseThrow();
-            DoctorProfile profile = doctorProfileRepository.findAll().stream().filter(p -> p.getUser().getId().equals(user.getId())).findFirst().orElseThrow();
-            java.nio.file.Path dir = java.nio.file.Paths.get("uploads");
-            java.nio.file.Files.createDirectories(dir);
-            String filename = profile.getId() + "-" + java.util.UUID.randomUUID() + "-" + photo.getOriginalFilename();
-            java.nio.file.Path path = dir.resolve(filename);
-            photo.transferTo(path.toFile());
-            profile.setPhotoUrl("/uploads/" + filename);
-            doctorProfileRepository.save(profile);
-        }
-        return ResponseEntity.ok(resp);
-    }
+    // Removed legacy form endpoint in favor of multipart handler above
 }

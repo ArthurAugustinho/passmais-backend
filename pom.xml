@@ -115,6 +115,13 @@
             <version>2.6.0</version>
         </dependency>
 
+        <!-- AWS & environment helpers -->
+        <dependency>
+            <groupId>com.amazonaws</groupId>
+            <artifactId>aws-java-sdk-s3</artifactId>
+            <version>1.12.768</version>
+        </dependency>
+
         <!-- Testes -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
