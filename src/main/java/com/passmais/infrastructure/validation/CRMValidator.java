@@ -14,4 +14,3 @@ public final class CRMValidator {
         return SIMPLE.matcher(v).matches() || WITH_UF.matcher(v).matches();
     }
 }
-
