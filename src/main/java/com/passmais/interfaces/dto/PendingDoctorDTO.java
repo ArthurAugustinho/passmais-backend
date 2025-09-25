@@ -13,4 +13,3 @@ public record PendingDoctorDTO(
         @JsonProperty("created_at") Instant createdAt,
         @JsonProperty("approved_at") Instant approvedAt
 ) {}
-
