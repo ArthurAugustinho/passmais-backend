@@ -43,10 +43,22 @@ public class DoctorProfile {
 
     private java.time.LocalDate birthDate;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "TEXT")
     private String photoUrl;
 
     private java.math.BigDecimal consultationPrice;
+
+    @Column(name = "clinic_name", length = 160)
+    private String clinicName;
+
+    @Column(name = "clinic_street_number", length = 160)
+    private String clinicStreetAndNumber;
+
+    @Column(name = "clinic_city", length = 120)
+    private String clinicCity;
+
+    @Column(name = "clinic_postal_code", length = 20)
+    private String clinicPostalCode;
 
     @CreationTimestamp
     private Instant createdAt;
