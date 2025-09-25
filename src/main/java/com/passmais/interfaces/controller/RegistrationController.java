@@ -124,6 +124,10 @@ public class RegistrationController {
                 .birthDate(dto.birthDate())
                 .photoUrl(dto.photoUrl())
                 .consultationPrice(dto.consultationPrice())
+                .clinicName(dto.clinicName())
+                .clinicStreetAndNumber(dto.streetAndNumber())
+                .clinicCity(dto.city())
+                .clinicPostalCode(dto.postalCode())
                 .approved(false)
                 .build();
         doctorProfileRepository.save(profile);
