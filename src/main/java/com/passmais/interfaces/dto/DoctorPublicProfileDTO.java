@@ -11,6 +11,10 @@ public record DoctorPublicProfileDTO(
         String bio,
         String photoUrl,
         BigDecimal consultationPrice,
+        String clinicName,
+        String clinicStreetAndNumber,
+        String clinicCity,
+        String clinicPostalCode,
         Double averageRating,
         long reviewsCount
 ) {}
