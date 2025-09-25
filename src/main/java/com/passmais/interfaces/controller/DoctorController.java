@@ -81,6 +81,10 @@ public class DoctorController {
         d.setSpecialty(dto.specialty());
         d.setCrm(dto.crm());
         d.setConsultationPrice(dto.consultationPrice());
+        d.setClinicName(dto.clinicName());
+        d.setClinicStreetAndNumber(dto.clinicStreetAndNumber());
+        d.setClinicCity(dto.clinicCity());
+        d.setClinicPostalCode(dto.clinicPostalCode());
         DoctorProfile saved = doctorRepo.save(d);
         return ResponseEntity.ok(toPublic(saved));
     }
@@ -96,6 +100,10 @@ public class DoctorController {
                 d.getBio(),
                 d.getPhotoUrl(),
                 d.getConsultationPrice(),
+                d.getClinicName(),
+                d.getClinicStreetAndNumber(),
+                d.getClinicCity(),
+                d.getClinicPostalCode(),
                 avg,
                 count
         );
