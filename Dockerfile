@@ -1,7 +1,7 @@
 # Multi-stage build for Spring Boot (Java 17)
 
 # 1) Build stage
-FROM maven:3.9.8-eclipse-temurin-17 AS build
+FROM public.ecr.aws/docker/library/maven:3.9.8-eclipse-temurin-17 AS build
 WORKDIR /app
 
 # 1) Cache dependencies in a separate layer for faster, resilient builds
@@ -16,7 +16,7 @@ COPY src ./src
 RUN mvn -B -DskipTests -Dmaven.wagon.http.retryHandler.count=3 clean package
 
 # 2) Runtime stage
-FROM eclipse-temurin:17-jre
+FROM public.ecr.aws/docker/library/eclipse-temurin:17-jre
 WORKDIR /app
 
 # Copy the fat jar produced by Spring Boot plugin
