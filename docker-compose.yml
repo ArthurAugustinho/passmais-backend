@@ -15,7 +15,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    restart: unless-stopped
+    restart: always
 
   api:
     build:
@@ -37,7 +37,7 @@ services:
     depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
+    restart: always
 
 volumes:
   db-data:
