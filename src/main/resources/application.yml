@@ -9,6 +9,8 @@ spring:
     properties:
       hibernate:
         jdbc.time_zone: UTC
+        type:
+          json_format_mapper: org.hibernate.type.format.jackson.JacksonJsonFormatMapper
     open-in-view: false
   jackson:
     serialization:
