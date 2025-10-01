@@ -2,6 +2,7 @@ package com.passmais.application.service;
 
 import com.passmais.domain.entity.User;
 import com.passmais.domain.enums.Role;
+import com.passmais.infrastructure.repository.DoctorProfileRepository;
 import com.passmais.infrastructure.repository.UserRepository;
 import com.passmais.infrastructure.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -22,17 +23,20 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final DoctorProfileRepository doctorProfileRepository;
 
     // Bloqueio por tentativas desativado
 
     public AuthService(AuthenticationManager authenticationManager,
                        UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       DoctorProfileRepository doctorProfileRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.doctorProfileRepository = doctorProfileRepository;
     }
 
     public Map<String, String> login(String email, String rawPassword) {
@@ -62,8 +66,7 @@ public class AuthService {
         user.setLastTokenRevalidatedAt(Instant.now());
         userRepository.save(user);
 
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", user.getRole().name());
+        Map<String, Object> claims = buildClaims(user);
         String accessToken = jwtService.generateAccessToken(user.getEmail(), claims);
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
@@ -84,8 +87,7 @@ public class AuthService {
         user.setLastTokenRevalidatedAt(Instant.now());
         userRepository.save(user);
 
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", user.getRole().name());
+        Map<String, Object> claims = buildClaims(user);
         String newAccessToken = jwtService.generateAccessToken(user.getEmail(), claims);
         String newRefreshToken = jwtService.generateRefreshToken(user.getEmail());
 
@@ -98,5 +100,17 @@ public class AuthService {
     public User register(User user, String rawPassword) {
         user.setPassword(passwordEncoder.encode(rawPassword));
         return userRepository.save(user);
+    }
+
+    private Map<String, Object> buildClaims(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getRole().name());
+        claims.put("userId", user.getId().toString());
+        if (user.getRole() == Role.DOCTOR) {
+            doctorProfileRepository.findByUserId(user.getId())
+                    .map(profile -> profile.getId().toString())
+                    .ifPresent(id -> claims.put("doctorId", id));
+        }
+        return claims;
     }
 }
