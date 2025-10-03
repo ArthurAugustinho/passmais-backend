@@ -24,7 +24,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class PatientScheduleService {
@@ -101,10 +103,20 @@ public class PatientScheduleService {
             List<String> times = dayAvailable.stream()
                     .filter(slot -> slot.getStatus() == null || slot.getStatus() == AvailableSlotStatus.AVAILABLE)
                     .map(DoctorAvailableSlot::getStartTime)
-                    .filter(time -> time != null)
+                    .filter(Objects::nonNull)
                     .sorted()
                     .map(LocalTime::toString)
-                    .toList();
+                    .collect(Collectors.toList());
+
+            if (times.isEmpty()) {
+                times = daySchedule.stream()
+                        .map(DoctorScheduleSlot::getTime)
+                        .filter(Objects::nonNull)
+                        .sorted()
+                        .map(LocalTime::toString)
+                        .distinct()
+                        .collect(Collectors.toList());
+            }
 
             ScheduleSlotSource source = daySchedule.stream()
                     .map(DoctorScheduleSlot::getSource)
