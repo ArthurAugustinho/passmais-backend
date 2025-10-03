@@ -131,4 +131,41 @@ class PatientScheduleServiceTest {
         verify(slotRepository, never()).findActiveByDoctorAndDateRange(any(), any(), any());
         verify(availableSlotRepository, never()).findByDoctorAndSlotDateBetweenOrderByStartAtUtc(any(), any(), any());
     }
+
+    @Test
+    void shouldFallbackToScheduleSlotsWhenNoAvailableSlots() {
+        UUID doctorId = UUID.randomUUID();
+        DoctorProfile doctor = new DoctorProfile();
+        doctor.setId(doctorId);
+        when(doctorProfileRepository.findById(doctorId)).thenReturn(Optional.of(doctor));
+
+        LocalDate start = LocalDate.now().plusDays(2);
+        DoctorScheduleSlot slotMorning = DoctorScheduleSlot.builder()
+                .doctor(doctor)
+                .date(start)
+                .time(LocalTime.of(9, 0))
+                .source(ScheduleSlotSource.SPECIFIC)
+                .build();
+        DoctorScheduleSlot slotAfternoon = DoctorScheduleSlot.builder()
+                .doctor(doctor)
+                .date(start)
+                .time(LocalTime.of(15, 30))
+                .source(ScheduleSlotSource.SPECIFIC)
+                .build();
+        when(slotRepository.findActiveByDoctorAndDateRange(eq(doctorId), any(), any()))
+                .thenReturn(List.of(slotMorning, slotAfternoon));
+
+        when(availableSlotRepository.findByDoctorAndSlotDateBetweenOrderByStartAtUtc(eq(doctor), any(), any()))
+                .thenReturn(List.of());
+
+        PatientScheduleResponse response = service.getDoctorSchedule(doctorId, start, start.plusDays(3));
+
+        var day = response.days().stream()
+                .filter(d -> d.isoDate().equals(start.toString()))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(List.of("09:00", "15:30"), day.slots());
+        assertFalse(day.blocked());
+    }
 }
