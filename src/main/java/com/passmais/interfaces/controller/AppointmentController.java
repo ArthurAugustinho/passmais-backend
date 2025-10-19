@@ -4,15 +4,20 @@ import com.passmais.application.service.AppointmentService;
 import com.passmais.domain.entity.Appointment;
 import com.passmais.domain.entity.DoctorProfile;
 import com.passmais.domain.entity.PatientProfile;
+import com.passmais.domain.entity.User;
+import com.passmais.domain.enums.Role;
 import com.passmais.infrastructure.repository.AppointmentRepository;
 import com.passmais.infrastructure.repository.DoctorProfileRepository;
 import com.passmais.infrastructure.repository.PatientProfileRepository;
+import com.passmais.infrastructure.repository.UserRepository;
 import com.passmais.interfaces.dto.*;
 import com.passmais.interfaces.mapper.AppointmentMapper;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 import java.util.List;
@@ -25,27 +30,57 @@ public class AppointmentController {
     private final AppointmentRepository appointmentRepository;
     private final DoctorProfileRepository doctorRepo;
     private final PatientProfileRepository patientRepo;
+    private final UserRepository userRepository;
     private final AppointmentMapper appointmentMapper;
 
     public AppointmentController(AppointmentService appointmentService,
                                  AppointmentRepository appointmentRepository,
                                  DoctorProfileRepository doctorRepo,
                                  PatientProfileRepository patientRepo,
+                                 UserRepository userRepository,
                                  AppointmentMapper appointmentMapper) {
         this.appointmentService = appointmentService;
         this.appointmentRepository = appointmentRepository;
         this.doctorRepo = doctorRepo;
         this.patientRepo = patientRepo;
+        this.userRepository = userRepository;
         this.appointmentMapper = appointmentMapper;
     }
 
     @PreAuthorize("hasRole('PATIENT')")
     @PostMapping
-    public ResponseEntity<AppointmentResponseDTO> schedule(@RequestBody @Valid AppointmentCreateDTO dto) {
-        DoctorProfile doctor = doctorRepo.findById(dto.doctorId()).orElseThrow();
-        PatientProfile patient = patientRepo.findById(dto.patientId()).orElseThrow();
-        Appointment appt = appointmentService.schedule(doctor, patient, dto.dateTime());
-        return ResponseEntity.ok(appointmentMapper.toResponse(appt));
+    public ResponseEntity<AppointmentConfirmationResponseDTO> schedule(@RequestBody @Valid AppointmentCreateDTO dto) {
+        DoctorProfile doctor = doctorRepo.findById(dto.doctorId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Médico não encontrado"));
+        User patientUser = userRepository.findById(dto.patientId())
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Usuário não encontrado"));
+        if (patientUser.getRole() != Role.PATIENT) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário informado não possui papel de paciente");
+        }
+        PatientProfile patientProfile = patientRepo.findByUserId(patientUser.getId()).orElse(null);
+        Appointment appt = appointmentService.schedule(
+                doctor,
+                patientUser,
+                patientProfile,
+                dto.appointmentDateTime(),
+                dto.bookingDateTime(),
+                dto.reason(),
+                dto.consultationValue(),
+                dto.location(),
+                dto.patientFullName(),
+                dto.patientCpf(),
+                dto.patientBirthDate(),
+                dto.patientCellPhone()
+        );
+        AppointmentConfirmationResponseDTO response = new AppointmentConfirmationResponseDTO(
+                "Consulta agendada com sucesso",
+                appointmentMapper.toResponse(appt)
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PreAuthorize("hasAnyRole('PATIENT','DOCTOR')")
@@ -111,8 +146,14 @@ public class AppointmentController {
     @PreAuthorize("hasAnyRole('PATIENT','ADMINISTRATOR')")
     @GetMapping("/patient/{patientId}")
     public ResponseEntity<List<AppointmentResponseDTO>> listForPatient(@PathVariable UUID patientId, @RequestParam(name = "status", required = false) com.passmais.domain.enums.AppointmentStatus status) {
-        PatientProfile patient = patientRepo.findById(patientId).orElseThrow();
-        List<Appointment> list = status == null ? appointmentRepository.findByPatient(patient) : appointmentRepository.findByPatientAndStatus(patient, status);
+        User patientUser = userRepository.findById(patientId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuário não encontrado"));
+        if (patientUser.getRole() != Role.PATIENT) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Usuário informado não possui papel de paciente");
+        }
+        List<Appointment> list = status == null
+                ? appointmentRepository.findByPatient(patientUser)
+                : appointmentRepository.findByPatientAndStatus(patientUser, status);
         return ResponseEntity.ok(list.stream().map(appointmentMapper::toResponse).toList());
     }
 }
