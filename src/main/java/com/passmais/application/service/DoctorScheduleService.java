@@ -27,6 +27,7 @@ public class DoctorScheduleService {
     private static final Map<DayOfWeek, String> KEY_BY_WEEKDAY;
     private static final List<AppointmentStatus> BLOCKING_STATUSES = List.of(
             AppointmentStatus.PENDING,
+            AppointmentStatus.CONFIRMED,
             AppointmentStatus.IN_PROGRESS,
             AppointmentStatus.DONE
     );
