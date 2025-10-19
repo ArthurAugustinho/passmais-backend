@@ -42,7 +42,9 @@ public class AdminQueueController {
         Instant end = LocalDate.now().atTime(LocalTime.MAX).toInstant(ZoneOffset.UTC);
         List<Appointment> list = appointmentRepository.findByDoctorAndDateTimeBetween(doctor, start, end)
                 .stream()
-                .filter(a -> a.getStatus() == AppointmentStatus.PENDING || a.getStatus() == AppointmentStatus.IN_PROGRESS)
+                .filter(a -> a.getStatus() == AppointmentStatus.PENDING
+                        || a.getStatus() == AppointmentStatus.CONFIRMED
+                        || a.getStatus() == AppointmentStatus.IN_PROGRESS)
                 .sorted(java.util.Comparator.comparing(Appointment::getDateTime))
                 .toList();
         return ResponseEntity.ok(list);
