@@ -1,8 +1,10 @@
 package com.passmais.interfaces.controller;
 
 import com.passmais.domain.entity.DoctorProfile;
+import com.passmais.domain.entity.PatientProfile;
 import com.passmais.infrastructure.repository.DoctorProfileRepository;
 import com.passmais.infrastructure.repository.AppointmentRepository;
+import com.passmais.infrastructure.repository.PatientProfileRepository;
 import com.passmais.infrastructure.repository.ReviewRepository;
 import com.passmais.interfaces.dto.DoctorPublicProfileDTO;
 import com.passmais.interfaces.dto.PendingDoctorDTO;
@@ -11,10 +13,13 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.List;
-import java.util.UUID;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/doctors")
@@ -23,11 +28,16 @@ public class DoctorController {
     private final DoctorProfileRepository doctorRepo;
     private final ReviewRepository reviewRepository;
     private final AppointmentRepository appointmentRepository;
+    private final PatientProfileRepository patientProfileRepository;
 
-    public DoctorController(DoctorProfileRepository doctorRepo, ReviewRepository reviewRepository, AppointmentRepository appointmentRepository) {
+    public DoctorController(DoctorProfileRepository doctorRepo,
+                            ReviewRepository reviewRepository,
+                            AppointmentRepository appointmentRepository,
+                            PatientProfileRepository patientProfileRepository) {
         this.doctorRepo = doctorRepo;
         this.reviewRepository = reviewRepository;
         this.appointmentRepository = appointmentRepository;
+        this.patientProfileRepository = patientProfileRepository;
     }
 
     @PreAuthorize("hasRole('ADMINISTRATOR')")
@@ -117,11 +127,17 @@ public class DoctorController {
             @RequestParam(name = "cpf", required = false) String cpf,
             @RequestParam(name = "date", required = false) String date) {
         DoctorProfile doctor = doctorRepo.findById(doctorId).orElseThrow();
-        List<com.passmais.domain.entity.PatientProfile> patients = appointmentRepository
-                .findByDoctor(doctor)
-                .stream()
-                .map(a -> a.getPatient())
-                .distinct()
+        List<com.passmais.domain.entity.Appointment> appointments = appointmentRepository.findByDoctor(doctor);
+        Map<UUID, List<com.passmais.domain.entity.Appointment>> appointmentsByUser = appointments.stream()
+                .filter(a -> a.getPatient() != null)
+                .collect(Collectors.groupingBy(a -> a.getPatient().getId()));
+        if (appointmentsByUser.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        List<PatientProfile> profiles = patientProfileRepository.findByUserIdIn(appointmentsByUser.keySet());
+        var stream = profiles.stream()
+                .filter(p -> p.getUser() != null)
                 .filter(p -> name == null || p.getUser().getName().toLowerCase().contains(name.toLowerCase()))
                 .filter(p -> cpf == null || (p.getCpf() != null && p.getCpf().equalsIgnoreCase(cpf)))
                 .filter(p -> {
@@ -129,10 +145,13 @@ public class DoctorController {
                     var d = LocalDate.parse(date);
                     var start = d.atStartOfDay().toInstant(ZoneOffset.UTC);
                     var end = d.atTime(java.time.LocalTime.MAX).toInstant(ZoneOffset.UTC);
-                    return appointmentRepository.countByPatientAndDateTimeBetween(p, start, end) > 0;
-                })
-                .toList();
-        return ResponseEntity.ok(patients);
+                    List<com.passmais.domain.entity.Appointment> patientAppointments = appointmentsByUser.getOrDefault(p.getUser().getId(), List.of());
+                    return patientAppointments.stream().anyMatch(a -> {
+                        Instant dt = a.getDateTime();
+                        return !dt.isBefore(start) && !dt.isAfter(end);
+                    });
+                });
+        return ResponseEntity.ok(stream.toList());
     }
 
     @PreAuthorize("hasRole('DOCTOR')")
