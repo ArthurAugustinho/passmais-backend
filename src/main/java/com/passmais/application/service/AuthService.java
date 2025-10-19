@@ -1,6 +1,8 @@
 package com.passmais.application.service;
 
 import com.passmais.domain.entity.User;
+import com.passmais.domain.enums.Role;
+import com.passmais.infrastructure.repository.DoctorProfileRepository;
 import com.passmais.infrastructure.repository.UserRepository;
 import com.passmais.infrastructure.security.JwtService;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -21,48 +23,50 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
+    private final DoctorProfileRepository doctorProfileRepository;
 
-    private static final int MAX_ATTEMPTS = 5;
-    private static final Duration LOCK_DURATION = Duration.ofMinutes(15);
+    // Bloqueio por tentativas desativado
 
     public AuthService(AuthenticationManager authenticationManager,
                        UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
-                       JwtService jwtService) {
+                       JwtService jwtService,
+                       DoctorProfileRepository doctorProfileRepository) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
+        this.doctorProfileRepository = doctorProfileRepository;
     }
 
     public Map<String, String> login(String email, String rawPassword) {
         User user = userRepository.findByEmail(email).orElseThrow(() -> new BadCredentialsException("Credenciais inválidas"));
 
-        if (user.getAccountLockedUntil() != null && user.getAccountLockedUntil().isAfter(Instant.now())) {
-            throw new BadCredentialsException("Conta bloqueada temporariamente. Tente novamente mais tarde.");
+        // Sem verificação de bloqueio por tentativas
+
+        // Verificação de e-mail: pacientes e médicos podem logar sem verificar e-mail
+        if (user.getEmailVerifiedAt() == null) {
+            if (!(user.getRole() == Role.PATIENT || user.getRole() == Role.DOCTOR)) {
+                throw new BadCredentialsException("E-mail não verificado");
+            }
         }
 
         try {
             authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(email, rawPassword));
         } catch (BadCredentialsException ex) {
-            int attempts = user.getFailedLoginAttempts() + 1;
-            user.setFailedLoginAttempts(attempts);
-            if (attempts >= MAX_ATTEMPTS) {
-                user.setAccountLockedUntil(Instant.now().plus(LOCK_DURATION));
-                user.setFailedLoginAttempts(0);
-            }
+            // Apenas registra tentativa falha sem bloquear a conta
+            user.setFailedLoginAttempts(user.getFailedLoginAttempts() + 1);
             userRepository.save(user);
             throw new BadCredentialsException("Credenciais inválidas");
         }
 
         // sucesso: reset tentativas
         user.setFailedLoginAttempts(0);
-        user.setAccountLockedUntil(null);
+        user.setAccountLockedUntil(null); // redundante, mas mantém compatibilidade
         user.setLastTokenRevalidatedAt(Instant.now());
         userRepository.save(user);
 
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", user.getRole().name());
+        Map<String, Object> claims = buildClaims(user);
         String accessToken = jwtService.generateAccessToken(user.getEmail(), claims);
         String refreshToken = jwtService.generateRefreshToken(user.getEmail());
 
@@ -83,8 +87,7 @@ public class AuthService {
         user.setLastTokenRevalidatedAt(Instant.now());
         userRepository.save(user);
 
-        Map<String, Object> claims = new HashMap<>();
-        claims.put("role", user.getRole().name());
+        Map<String, Object> claims = buildClaims(user);
         String newAccessToken = jwtService.generateAccessToken(user.getEmail(), claims);
         String newRefreshToken = jwtService.generateRefreshToken(user.getEmail());
 
@@ -98,5 +101,16 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(rawPassword));
         return userRepository.save(user);
     }
-}
 
+    private Map<String, Object> buildClaims(User user) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("role", user.getRole().name());
+        claims.put("userId", user.getId().toString());
+        if (user.getRole() == Role.DOCTOR) {
+            doctorProfileRepository.findByUserId(user.getId())
+                    .map(profile -> profile.getId().toString())
+                    .ifPresent(id -> claims.put("doctorId", id));
+        }
+        return claims;
+    }
+}

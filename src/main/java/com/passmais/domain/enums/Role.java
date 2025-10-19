@@ -5,6 +5,6 @@ public enum Role {
     DOCTOR,
     CLINIC,
     ADMIN,
+    ADMINISTRATOR,
     SUPERADMIN
 }
-

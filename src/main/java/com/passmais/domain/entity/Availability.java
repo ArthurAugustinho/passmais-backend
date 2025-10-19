@@ -2,9 +2,12 @@ package com.passmais.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.DayOfWeek;
 import java.time.LocalTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Getter
@@ -32,5 +35,10 @@ public class Availability {
 
     @Column(nullable = false)
     private LocalTime endTime;
-}
 
+    @CreationTimestamp
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    private Instant updatedAt;
+}

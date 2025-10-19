@@ -11,6 +11,6 @@ public record UserCreateDTO(
         @Email(message = "E-mail inválido") @NotBlank(message = "E-mail é obrigatório") String email,
         @NotBlank(message = "Senha é obrigatória") @Size(min = 6, message = "Senha deve ter ao menos 6 caracteres") String password,
         @NotNull(message = "Perfil é obrigatório") Role role,
-        @NotNull(message = "Aceite da LGPD é obrigatório") Boolean lgpdAccepted
+        @NotNull(message = "Aceite da LGPD é obrigatório") Boolean lgpdAccepted,
+        @Size(max = 20, message = "Telefone muito longo") String phone
 ) {}
-

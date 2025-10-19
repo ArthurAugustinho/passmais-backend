@@ -2,6 +2,8 @@ package com.passmais.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -38,4 +40,10 @@ public class Clinic {
     @ManyToMany(mappedBy = "clinics")
     @Builder.Default
     private Set<DoctorProfile> doctors = new HashSet<>();
+
+    @CreationTimestamp
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    private Instant updatedAt;
 }
