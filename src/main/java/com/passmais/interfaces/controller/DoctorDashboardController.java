@@ -38,7 +38,9 @@ public class DoctorDashboardController {
         List<Appointment> today = appointmentRepository.findByDoctorAndDateTimeBetween(doctor, start, end);
 
         long total = today.size();
-        long pend = today.stream().filter(a -> a.getStatus() == AppointmentStatus.PENDING).count();
+        long pend = today.stream()
+                .filter(a -> a.getStatus() == AppointmentStatus.PENDING || a.getStatus() == AppointmentStatus.CONFIRMED)
+                .count();
         long done = today.stream().filter(a -> a.getStatus() == AppointmentStatus.DONE).count();
         long canc = today.stream().filter(a -> a.getStatus() == AppointmentStatus.CANCELED).count();
 
@@ -50,7 +52,9 @@ public class DoctorDashboardController {
                 .toList();
 
         List<DoctorDashboardDTO.SimpleAppointmentItem> proximos = today.stream()
-                .filter(a -> a.getStatus() == AppointmentStatus.PENDING || a.getStatus() == AppointmentStatus.IN_PROGRESS)
+                .filter(a -> a.getStatus() == AppointmentStatus.PENDING
+                        || a.getStatus() == AppointmentStatus.CONFIRMED
+                        || a.getStatus() == AppointmentStatus.IN_PROGRESS)
                 .sorted(Comparator.comparing(Appointment::getDateTime))
                 .limit(5)
                 .map(a -> new DoctorDashboardDTO.SimpleAppointmentItem(a.getId(), a.getDateTime(), a.getPatient().getId()))
@@ -60,4 +64,3 @@ public class DoctorDashboardController {
         return ResponseEntity.ok(dto);
     }
 }
-
