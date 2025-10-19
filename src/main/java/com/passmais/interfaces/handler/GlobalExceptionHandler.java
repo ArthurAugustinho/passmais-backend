@@ -17,12 +17,15 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.validation.BindException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.core.NestedExceptionUtils;
+
+import com.passmais.domain.exception.ApiErrorException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -165,5 +168,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, Object> body = new HashMap<>();
         body.put("mensagem", "Erro interno inesperado");
         return new ResponseEntity<>(body, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(ApiErrorException.class)
+    public ResponseEntity<Object> handleApiError(ApiErrorException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("code", ex.getCode());
+        body.put("message", ex.getMessage());
+        if (ex.getFieldErrors() != null && !ex.getFieldErrors().isEmpty()) {
+            List<Map<String, String>> errors = ex.getFieldErrors().entrySet().stream()
+                    .map(entry -> Map.of("field", entry.getKey(), "message", entry.getValue()))
+                    .toList();
+            body.put("errors", errors);
+        }
+        return new ResponseEntity<>(body, ex.getStatus());
     }
 }
