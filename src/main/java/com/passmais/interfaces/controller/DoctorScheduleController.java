@@ -5,6 +5,7 @@ import com.passmais.application.service.DoctorScheduleSlotBatchService;
 import com.passmais.application.service.ScheduleBatchUpsertResult;
 import com.passmais.application.service.exception.ScheduleException;
 import com.passmais.domain.enums.Role;
+import com.passmais.domain.util.EmailUtils;
 import com.passmais.infrastructure.repository.DoctorProfileRepository;
 import com.passmais.infrastructure.repository.UserRepository;
 import com.passmais.interfaces.dto.schedule.DoctorSchedulePayload;
@@ -99,7 +100,8 @@ public class DoctorScheduleController {
         if (username == null) {
             return null;
         }
-        return userRepository.findByEmail(username)
+        String normalized = EmailUtils.normalize(username);
+        return userRepository.findByEmailIgnoreCase(normalized != null ? normalized : username)
                 .map(user -> user.getId())
                 .orElse(null);
     }
@@ -109,7 +111,8 @@ public class DoctorScheduleController {
         if (username == null) {
             return null;
         }
-        return userRepository.findByEmail(username)
+        String normalized = EmailUtils.normalize(username);
+        return userRepository.findByEmailIgnoreCase(normalized != null ? normalized : username)
                 .filter(user -> user.getRole() == Role.DOCTOR)
                 .flatMap(user -> doctorProfileRepository.findByUserId(user.getId())
                         .map(profile -> new DoctorContext(user.getId(), profile.getId())))
