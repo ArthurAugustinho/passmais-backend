@@ -4,6 +4,7 @@ public enum Role {
     PATIENT,
     DOCTOR,
     CLINIC,
+    SECRETARY,
     ADMIN,
     ADMINISTRATOR,
     SUPERADMIN
