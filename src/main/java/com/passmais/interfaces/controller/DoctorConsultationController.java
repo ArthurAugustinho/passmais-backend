@@ -4,6 +4,7 @@ import com.passmais.application.service.consultation.ConsultationStatusMapper;
 import com.passmais.application.service.consultation.DoctorConsultationService;
 import com.passmais.domain.enums.AppointmentStatus;
 import com.passmais.domain.enums.Role;
+import com.passmais.domain.util.EmailUtils;
 import com.passmais.domain.exception.ApiErrorException;
 import com.passmais.infrastructure.repository.UserRepository;
 import com.passmais.interfaces.dto.consultation.*;
@@ -143,7 +144,8 @@ public class DoctorConsultationController {
         if (username == null) {
             return Optional.empty();
         }
-        return userRepository.findByEmail(username)
+        String normalized = EmailUtils.normalize(username);
+        return userRepository.findByEmailIgnoreCase(normalized != null ? normalized : username)
                 .filter(user -> user.getRole() == Role.DOCTOR)
                 .map(user -> user.getId());
     }
