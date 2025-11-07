@@ -3,6 +3,7 @@ package com.passmais.interfaces.controller;
 import com.passmais.application.service.AuthService;
 import com.passmais.domain.entity.User;
 import com.passmais.domain.entity.RevokedToken;
+import com.passmais.domain.util.EmailUtils;
 import com.passmais.interfaces.dto.*;
 import com.passmais.interfaces.mapper.UserMapper;
 import com.passmais.infrastructure.repository.RevokedTokenRepository;
@@ -35,7 +36,8 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody @Valid AuthRequestDTO request) {
         Map<String, String> tokens = authService.login(request.email(), request.password());
-        User user = userRepository.findByEmail(request.email()).orElseThrow();
+        String normalizedEmail = EmailUtils.normalize(request.email());
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail != null ? normalizedEmail : request.email()).orElseThrow();
         return ResponseEntity.ok(new LoginResponseDTO(tokens.get("accessToken"), user.getName(), user.getRole()));
     }
 
