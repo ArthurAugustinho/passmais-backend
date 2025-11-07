@@ -18,6 +18,7 @@ public interface DoctorProfileRepository extends JpaRepository<DoctorProfile, UU
     boolean existsByPhone(String phone);
     List<DoctorProfile> findByApprovedAtIsNullAndRejectedAtIsNull();
     Optional<DoctorProfile> findByUserId(UUID userId);
+    List<DoctorProfile> findByUserIdIn(Iterable<UUID> userIds);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select d from DoctorProfile d where d.id = :doctorId")
