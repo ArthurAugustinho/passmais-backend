@@ -25,7 +25,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
 
-    @Value("${cors.allowed-origins:https://www.passmais.com.br}")
+    @Value("${cors.allowed-origins:https://www.passmais.com.br,http://localhost:3000}")
     private String[] allowedOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
@@ -40,7 +40,8 @@ public class SecurityConfig {
             .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/auth/**", "/api/registration/**").permitAll()
-                .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").hasRole("ADMINISTRATOR")// Restrict in prod
+                .requestMatchers(HttpMethod.POST, "/api/teams/join").permitAll()
+                .requestMatchers("/v3/api-docs/**", "/swagger-ui.html", "/swagger-ui/**").permitAll()// Restrict in prod
                 .requestMatchers(HttpMethod.GET, "/actuator/health").permitAll()
                 .anyRequest().authenticated()
             )
