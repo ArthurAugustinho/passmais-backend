@@ -23,10 +23,10 @@ services:
       DB_USERNAME: ${DB_USERNAME:-passmais}
       DB_PASSWORD: ${DB_PASSWORD:-passmais}
       JWT_SECRET: ${JWT_SECRET:-change-me}
-      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
-      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-local-dev-access-key}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-local-dev-secret-key}
       AWS_REGION: ${AWS_REGION:-us-east-1}
-      AWS_S3_BUCKET: ${AWS_S3_BUCKET}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-passmais-local-bucket}
     ports:
       - "8080:8080"
     depends_on:
