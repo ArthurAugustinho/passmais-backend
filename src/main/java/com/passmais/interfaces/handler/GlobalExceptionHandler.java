@@ -26,6 +26,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.core.NestedExceptionUtils;
 
 import com.passmais.domain.exception.ApiErrorException;
+import com.passmais.application.service.exception.InviteSecurityException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
@@ -83,6 +84,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return switch (constraintName) {
             case "users_email_key" -> "E-mail já cadastrado";
             case "uk_doctor_profiles_phone", "uk_patient_profiles_cell_phone" -> "Telefone já utilizado";
+            case "uk_users_cpf" -> "CPF já utilizado";
             default -> "Registro já existe";
         };
     }
@@ -147,6 +149,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         Map<String, Object> body = new HashMap<>();
         body.put("mensagem", "Tipo inválido para parâmetro: " + ex.getName());
         return new ResponseEntity<>(body, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(InviteSecurityException.class)
+    public ResponseEntity<Object> handleInviteSecurity(InviteSecurityException ex) {
+        Map<String, Object> body = new HashMap<>();
+        body.put("error", ex.getMessage());
+        body.put("status", ex.getStatus().value());
+        return new ResponseEntity<>(body, ex.getStatus());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
