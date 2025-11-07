@@ -5,6 +5,7 @@ import com.passmais.domain.entity.Clinic;
 import com.passmais.domain.entity.DoctorProfile;
 import com.passmais.domain.entity.AuditLog;
 import com.passmais.domain.entity.User;
+import com.passmais.domain.util.EmailUtils;
 import com.passmais.infrastructure.repository.AuditLogRepository;
 import com.passmais.infrastructure.repository.UserRepository;
 import org.springframework.http.ResponseEntity;
@@ -106,7 +107,8 @@ public class AdminController {
         if (username == null) {
             return null;
         }
-        return userRepository.findByEmail(username)
+        String normalized = EmailUtils.normalize(username);
+        return userRepository.findByEmailIgnoreCase(normalized != null ? normalized : username)
                 .map(User::getId)
                 .orElse(null);
     }
