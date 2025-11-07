@@ -6,6 +6,7 @@ import com.passmais.domain.entity.DoctorProfile;
 import com.passmais.domain.entity.PatientProfile;
 import com.passmais.domain.entity.User;
 import com.passmais.domain.enums.Role;
+import com.passmais.domain.util.EmailUtils;
 import com.passmais.infrastructure.repository.DoctorProfileRepository;
 import com.passmais.infrastructure.repository.PatientProfileRepository;
 import com.passmais.infrastructure.repository.UserRepository;
@@ -92,7 +93,11 @@ public class RegistrationController {
         if (!dto.phone().matches("^\\+?[0-9]{10,14}$")) {
             throw new IllegalArgumentException("Telefone inválido");
         }
-        if (userRepository.findByEmail(dto.email()).isPresent()) {
+        String normalizedEmail = EmailUtils.normalize(dto.email());
+        if (normalizedEmail == null) {
+            throw new IllegalArgumentException("E-mail inválido");
+        }
+        if (userRepository.findByEmailIgnoreCase(normalizedEmail).isPresent()) {
             throw new IllegalArgumentException("E-mail já cadastrado");
         }
         if (doctorProfileRepository.existsByPhone(dto.phone()) || patientProfileRepository.existsByCellPhone(dto.phone())) {
@@ -107,7 +112,7 @@ public class RegistrationController {
         String code = java.util.UUID.randomUUID().toString().replaceAll("-", "");
         User user = User.builder()
                 .name(dto.name())
-                .email(dto.email())
+                .email(normalizedEmail)
                 .role(Role.DOCTOR)
                 .lgpdAcceptedAt(Instant.now())
                 .verificationCode(code)
@@ -151,13 +156,17 @@ public class RegistrationController {
         if (patientProfileRepository.existsByCellPhone(dto.cellPhone())) {
             throw new IllegalArgumentException("Telefone já utilizado");
         }
-        if (userRepository.findByEmail(dto.email()).isPresent()) {
+        String normalizedEmail = EmailUtils.normalize(dto.email());
+        if (normalizedEmail == null) {
+            throw new IllegalArgumentException("E-mail inválido");
+        }
+        if (userRepository.findByEmailIgnoreCase(normalizedEmail).isPresent()) {
             throw new IllegalArgumentException("E-mail já cadastrado");
         }
         String code = java.util.UUID.randomUUID().toString().replaceAll("-", "");
         User user = User.builder()
                 .name(dto.name())
-                .email(dto.email())
+                .email(normalizedEmail)
                 .role(Role.PATIENT)
                 .lgpdAcceptedAt(Instant.now())
                 .verificationCode(code)
@@ -183,7 +192,8 @@ public class RegistrationController {
 
     @PostMapping("/verify-email")
     public ResponseEntity<Void> verifyEmail(@RequestParam("email") String email, @RequestParam("code") String code) {
-        User user = userRepository.findByEmail(email).orElseThrow();
+        String normalizedEmail = EmailUtils.normalize(email);
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail != null ? normalizedEmail : email).orElseThrow();
         if (user.getEmailVerifiedAt() != null) {
             return ResponseEntity.noContent().build();
         }
