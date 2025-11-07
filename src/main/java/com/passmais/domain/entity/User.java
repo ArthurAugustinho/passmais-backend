@@ -44,6 +44,12 @@ public class User {
     @Column(length = 64)
     private String verificationCode;
 
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 14)
+    private String cpf;
+
     @CreationTimestamp
     private Instant createdAt;
 
