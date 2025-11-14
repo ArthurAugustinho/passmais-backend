@@ -39,6 +39,9 @@ public class TeamInvite {
     @Column(name = "uses_remaining", nullable = false)
     private int usesRemaining;
 
+    @Column(name = "display_code", length = 20)
+    private String displayCode;
+
     @Column(name = "secretary_full_name", nullable = false, length = 255)
     private String secretaryFullName;
 
