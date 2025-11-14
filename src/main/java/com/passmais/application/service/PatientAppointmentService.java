@@ -12,6 +12,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -32,6 +33,7 @@ public class PatientAppointmentService {
             AppointmentStatus.IN_PROGRESS,
             AppointmentStatus.DONE
     );
+    private static final ZoneId SYSTEM_ZONE = ZoneId.of("America/Sao_Paulo");
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -93,7 +95,8 @@ public class PatientAppointmentService {
     }
 
     private PatientAppointmentListItemDTO toListItem(Appointment appointment) {
-        LocalDateTime localDateTime = LocalDateTime.ofInstant(appointment.getDateTime(), ZoneOffset.UTC);
+        LocalDateTime localDateTime = LocalDateTime.ofInstant(appointment.getDateTime(), SYSTEM_ZONE);
+        UUID doctorId = appointment.getDoctor() != null ? appointment.getDoctor().getId() : null;
         String doctorName = appointment.getDoctor() != null && appointment.getDoctor().getUser() != null
                 ? appointment.getDoctor().getUser().getName()
                 : null;
@@ -103,6 +106,7 @@ public class PatientAppointmentService {
                 : null;
         return new PatientAppointmentListItemDTO(
                 appointment.getId(),
+                doctorId,
                 DATE_FORMAT.format(localDateTime),
                 TIME_FORMAT.format(localDateTime),
                 doctorName,

@@ -30,7 +30,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +39,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/patients/appointments")
 public class PatientAppointmentController {
+
+    private static final ZoneId SYSTEM_ZONE = ZoneId.of("America/Sao_Paulo");
 
     private final PatientAppointmentService patientAppointmentService;
     private final UserRepository userRepository;
@@ -97,7 +99,7 @@ public class PatientAppointmentController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Formato de horário inválido. Use HH:mm.");
         }
         LocalDateTime localDateTime = LocalDateTime.of(date, time);
-        return localDateTime.toInstant(ZoneOffset.UTC);
+        return localDateTime.atZone(SYSTEM_ZONE).toInstant();
     }
 
     private User requireAuthenticatedPatient() {

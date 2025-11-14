@@ -30,6 +30,10 @@ public class AppointmentService {
     private final ConsultationRecordRepository consultationRecordRepository;
     private static final int MAX_RESCHEDULES_IN_30_DAYS = 2;
     private static final Duration CANCEL_MIN_NOTICE = Duration.ofHours(6); // antecedência mínima de cancelamento: 6h
+    private static final List<AppointmentStatus> ACTIVE_PATIENT_STATUSES = List.of(
+            AppointmentStatus.PENDING,
+            AppointmentStatus.CONFIRMED
+    );
 
     public AppointmentService(AppointmentRepository appointmentRepository,
                               NotificationRepository notificationRepository,
@@ -54,6 +58,16 @@ public class AppointmentService {
         Instant now = Instant.now();
         if (appointmentDateTime.isBefore(now)) {
             throw new IllegalArgumentException("Consulta deve ser no futuro");
+        }
+        boolean hasActiveAppointment = appointmentRepository
+                .existsByDoctorAndPatientAndStatusInAndDateTimeGreaterThanEqual(
+                        doctor,
+                        patientUser,
+                        ACTIVE_PATIENT_STATUSES,
+                        now
+                );
+        if (hasActiveAppointment) {
+            throw new IllegalArgumentException("Você já possui uma consulta ativa com este médico. Aguarde o atendimento ou cancele a consulta atual antes de agendar novamente.");
         }
         // checar conflito do médico em status relevantes
         if (appointmentRepository.existsByDoctorAndDateTimeAndStatusIn(doctor, appointmentDateTime,

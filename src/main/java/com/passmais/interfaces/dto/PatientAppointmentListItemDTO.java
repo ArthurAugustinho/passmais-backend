@@ -6,6 +6,7 @@ import java.util.UUID;
 
 public record PatientAppointmentListItemDTO(
         UUID id,
+        UUID doctorId,
         String date,
         String time,
         String doctorName,

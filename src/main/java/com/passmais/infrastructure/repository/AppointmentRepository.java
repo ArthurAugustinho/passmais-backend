@@ -17,6 +17,10 @@ public interface AppointmentRepository extends JpaRepository<Appointment, UUID>,
     List<Appointment> findByPatientAndDateTimeBetween(User patient, Instant start, Instant end);
     long countByPatientAndDateTimeBetween(User patient, Instant start, Instant end);
     boolean existsByDoctorAndDateTimeAndStatusIn(DoctorProfile doctor, Instant dateTime, List<AppointmentStatus> statuses);
+    boolean existsByDoctorAndPatientAndStatusInAndDateTimeGreaterThanEqual(DoctorProfile doctor,
+                                                                           User patient,
+                                                                           List<AppointmentStatus> statuses,
+                                                                           Instant dateTime);
 
     @Query("select count(a) from Appointment a where a.patient = :patient and a.rescheduledFrom is not null and a.dateTime between :start and :end")
     long countReschedulesInPeriod(@Param("patient") User patient, @Param("start") Instant start, @Param("end") Instant end);
