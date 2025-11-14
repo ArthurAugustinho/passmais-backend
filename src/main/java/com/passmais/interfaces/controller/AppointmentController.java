@@ -96,7 +96,7 @@ public class AppointmentController {
     @PostMapping("/{id}/cancel")
     public ResponseEntity<AppointmentResponseDTO> cancel(@PathVariable UUID id) {
         Appointment appt = appointmentRepository.findById(id).orElseThrow();
-        Appointment canceled = appointmentService.cancel(appt);
+        Appointment canceled = appointmentService.cancel(appt, null);
         return ResponseEntity.ok(appointmentMapper.toResponse(canceled));
     }
 
@@ -129,7 +129,7 @@ public class AppointmentController {
     public ResponseEntity<AppointmentResponseDTO> cancelWithReason(@PathVariable UUID id, @RequestBody @Valid AppointmentCancelDTO dto) {
         Appointment appt = appointmentRepository.findById(id).orElseThrow();
         appt.setObservations(dto.reason());
-        Appointment canceled = appointmentService.cancel(appt);
+        Appointment canceled = appointmentService.cancel(appt, dto.reason());
         return ResponseEntity.ok(appointmentMapper.toResponse(canceled));
     }
 
