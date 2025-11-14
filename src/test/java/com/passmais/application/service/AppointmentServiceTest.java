@@ -66,7 +66,7 @@ public class AppointmentServiceTest {
     void cancelShouldRejectLateCancellation() {
         Appointment a = new Appointment();
         a.setDateTime(Instant.now().plus(Duration.ofHours(1))); // menos que janela de 6h
-        assertThrows(IllegalArgumentException.class, () -> service.cancel(a));
+        assertThrows(IllegalArgumentException.class, () -> service.cancel(a, null));
     }
 
     @Test
