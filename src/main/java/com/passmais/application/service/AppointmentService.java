@@ -151,12 +151,21 @@ public class AppointmentService {
         return appointmentRepository.save(newAppt);
     }
 
-    public Appointment cancel(Appointment appt) {
+    public Appointment cancel(Appointment appt, String cancelReason) {
         Instant now = Instant.now();
+        if (appt.getStatus() == AppointmentStatus.CANCELED) {
+            throw new IllegalArgumentException("Consulta já foi cancelada.");
+        }
         if (appt.getDateTime().minus(CANCEL_MIN_NOTICE).isBefore(now)) {
             throw new IllegalArgumentException("Cancelamento permitido apenas com antecedência mínima");
         }
         appt.setStatus(AppointmentStatus.CANCELED);
+        appt.setCanceledAt(now);
+        String resolvedReason = cancelReason;
+        if (!StringUtils.hasText(resolvedReason)) {
+            resolvedReason = appt.getObservations();
+        }
+        appt.setCanceledReason(resolvedReason);
         Appointment saved = appointmentRepository.save(appt);
         Notification n1 = Notification.builder()
                 .user(appt.getDoctor().getUser())
@@ -166,7 +175,7 @@ public class AppointmentService {
         Notification n2 = Notification.builder()
                 .user(appt.getPatient())
                 .type(NotificationType.CANCELLATION)
-                .content("Sua consulta foi cancelada: " + appt.getObservations())
+                .content("Sua consulta foi cancelada." + (resolvedReason != null ? " Motivo: " + resolvedReason : ""))
                 .build();
         notificationRepository.save(n1);
         notificationRepository.save(n2);
