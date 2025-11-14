@@ -90,4 +90,10 @@ public class Appointment {
     @ManyToOne
     @JoinColumn(name = "updated_by_user_id")
     private User updatedBy;
+
+    @Column(name = "canceled_at")
+    private Instant canceledAt;
+
+    @Column(name = "canceled_reason", length = 500)
+    private String canceledReason;
 }
