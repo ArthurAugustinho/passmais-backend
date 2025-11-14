@@ -106,6 +106,23 @@ public class TeamController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasRole('DOCTOR')")
+    @GetMapping("/invites")
+    public ResponseEntity<List<TeamInviteListItemDTO>> listInvites() {
+        User doctor = requireAuthenticatedUser(Role.DOCTOR);
+        List<TeamInviteListItemDTO> response = teamService.listActiveInvites(doctor.getId()).stream()
+                .map(item -> new TeamInviteListItemDTO(
+                        item.code(),
+                        item.status().name(),
+                        item.usesRemaining(),
+                        item.expiresAt(),
+                        item.secretaryFullName(),
+                        item.secretaryCorporateEmail()
+                ))
+                .toList();
+        return ResponseEntity.ok(response);
+    }
+
     @PreAuthorize("hasRole('SECRETARY')")
     @GetMapping("/doctors")
     public ResponseEntity<List<TeamDoctorResponseDTO>> listDoctors() {
