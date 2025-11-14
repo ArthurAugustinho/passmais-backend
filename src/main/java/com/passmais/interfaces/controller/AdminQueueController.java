@@ -74,7 +74,13 @@ public class AdminQueueController {
     public ResponseEntity<Map<String, Object>> remove(@PathVariable UUID appointmentId, @RequestParam @NotNull UUID adminUserId, @RequestParam(required = false) String reason) {
         Appointment appt = appointmentRepository.findById(appointmentId).orElseThrow();
         appt.setStatus(AppointmentStatus.CANCELED);
-        if (reason != null) appt.setObservations(reason);
+        if (reason != null) {
+            appt.setObservations(reason);
+            appt.setCanceledReason(reason);
+        } else {
+            appt.setCanceledReason(null);
+        }
+        appt.setCanceledAt(Instant.now());
         appointmentRepository.save(appt);
         auditLogRepository.save(AuditLog.builder()
                 .actorUserId(adminUserId)
