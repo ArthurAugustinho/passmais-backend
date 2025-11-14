@@ -4,6 +4,7 @@ import com.passmais.domain.entity.Appointment;
 import com.passmais.domain.entity.ConsultationRecord;
 import com.passmais.domain.entity.DoctorProfile;
 import com.passmais.domain.entity.PatientAlert;
+import com.passmais.domain.entity.PatientFile;
 import com.passmais.domain.entity.User;
 import com.passmais.domain.enums.AppointmentStatus;
 import com.passmais.domain.enums.ConsultationRecordStatus;
@@ -12,6 +13,7 @@ import com.passmais.infrastructure.repository.AppointmentRepository;
 import com.passmais.infrastructure.repository.ConsultationRecordRepository;
 import com.passmais.infrastructure.repository.DoctorProfileRepository;
 import com.passmais.infrastructure.repository.PatientAlertRepository;
+import com.passmais.infrastructure.repository.PatientFileRepository;
 import com.passmais.infrastructure.repository.UserRepository;
 import com.passmais.interfaces.dto.consultation.*;
 import jakarta.persistence.EntityNotFoundException;
@@ -47,17 +49,20 @@ public class DoctorConsultationService {
     private final ConsultationRecordRepository consultationRecordRepository;
     private final DoctorProfileRepository doctorProfileRepository;
     private final PatientAlertRepository patientAlertRepository;
+    private final PatientFileRepository patientFileRepository;
     private final UserRepository userRepository;
 
     public DoctorConsultationService(AppointmentRepository appointmentRepository,
                                      ConsultationRecordRepository consultationRecordRepository,
                                      DoctorProfileRepository doctorProfileRepository,
                                      PatientAlertRepository patientAlertRepository,
+                                     PatientFileRepository patientFileRepository,
                                      UserRepository userRepository) {
         this.appointmentRepository = appointmentRepository;
         this.consultationRecordRepository = consultationRecordRepository;
         this.doctorProfileRepository = doctorProfileRepository;
         this.patientAlertRepository = patientAlertRepository;
+        this.patientFileRepository = patientFileRepository;
         this.userRepository = userRepository;
     }
 
@@ -100,9 +105,13 @@ public class DoctorConsultationService {
         Page<Appointment> result = appointmentRepository.findAll(spec, pageable);
 
         Map<UUID, List<PatientAlert>> alertsByPatient = fetchAlertsByPatient(result.getContent());
+        Map<String, Instant> presenceByCpf = fetchPresenceByCpf(result.getContent());
 
         List<DoctorConsultationListItemDTO> items = result.getContent().stream()
-                .map(appt -> toListItem(appt, alertsByPatient.getOrDefault(appt.getPatient().getId(), List.of()), true))
+                .map(appt -> {
+                    Instant presence = presenceByCpf.getOrDefault(sanitizeDigits(appt.getPatientCpf()), null);
+                    return toListItem(appt, alertsByPatient.getOrDefault(appt.getPatient().getId(), List.of()), true, presence);
+                })
                 .toList();
 
         return new DoctorConsultationPageResponseDTO(items, resolvedPage, resolvedSize, result.getTotalElements());
@@ -125,6 +134,7 @@ public class DoctorConsultationService {
 
         List<ClinicalAlertDTO> alerts = toAlertDtos(fetchAlertsByPatient(List.of(appointment))
                 .getOrDefault(appointment.getPatient().getId(), List.of()));
+        Instant presenceConfirmedAt = findPresenceForAppointment(appointment);
 
         DoctorConsultationDetailDTO body = new DoctorConsultationDetailDTO(
                 appointment.getId(),
@@ -140,7 +150,7 @@ public class DoctorConsultationService {
                 List.of(),
                 List.of(),
                 List.of(),
-                toPatientSummary(appointment, true)
+                toPatientSummary(appointment, true, presenceConfirmedAt)
         );
         return new DetailResult(body, buildEtag(record));
     }
@@ -348,9 +358,27 @@ public class DoctorConsultationService {
         return alerts.stream().collect(Collectors.groupingBy(alert -> alert.getPatient().getUser().getId()));
     }
 
+    private Map<String, Instant> fetchPresenceByCpf(Collection<Appointment> appointments) {
+        if (appointments == null || appointments.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        Set<String> cpfs = appointments.stream()
+                .map(Appointment::getPatientCpf)
+                .map(this::sanitizeDigits)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
+        if (cpfs.isEmpty()) {
+            return Collections.emptyMap();
+        }
+        List<PatientFile> files = patientFileRepository.findByCpfIn(cpfs);
+        return files.stream()
+                .collect(Collectors.toMap(PatientFile::getCpf, PatientFile::getPresenceConfirmedAt, (a, b) -> a));
+    }
+
     private DoctorConsultationListItemDTO toListItem(Appointment appointment,
                                                      List<PatientAlert> alerts,
-                                                     boolean maskSensitive) {
+                                                     boolean maskSensitive,
+                                                     Instant presenceConfirmedAt) {
         return new DoctorConsultationListItemDTO(
                 appointment.getId(),
                 appointment.getDateTime(),
@@ -358,7 +386,7 @@ public class DoctorConsultationService {
                 appointment.getReason(),
                 appointment.getSymptomDuration(),
                 toAlertDtos(alerts),
-                toPatientSummary(appointment, maskSensitive)
+                toPatientSummary(appointment, maskSensitive, presenceConfirmedAt)
         );
     }
 
@@ -376,20 +404,41 @@ public class DoctorConsultationService {
                 .toList();
     }
 
-    private PatientSummaryDTO toPatientSummary(Appointment appointment, boolean maskSensitive) {
+    private PatientSummaryDTO toPatientSummary(Appointment appointment, boolean maskSensitive, Instant presenceConfirmedAt) {
         User patientUser = appointment.getPatient();
         if (patientUser == null) {
             return null;
         }
+        String cpf = Optional.ofNullable(appointment.getPatientCpf()).orElse(patientUser.getCpf());
         return new PatientSummaryDTO(
                 patientUser.getId(),
                 Optional.ofNullable(appointment.getPatientFullName()).orElse(patientUser.getName()),
                 appointment.getPatientBirthDate(),
                 null,
                 null,
+                cpf,
+                presenceConfirmedAt,
                 maskSensitive,
                 maskSensitive
         );
+    }
+
+    private Instant findPresenceForAppointment(Appointment appointment) {
+        String cpf = sanitizeDigits(appointment.getPatientCpf());
+        if (cpf == null) {
+            return null;
+        }
+        return patientFileRepository.findByCpf(cpf)
+                .map(PatientFile::getPresenceConfirmedAt)
+                .orElse(null);
+    }
+
+    private String sanitizeDigits(String value) {
+        if (value == null) {
+            return null;
+        }
+        String digits = value.replaceAll("\\D", "");
+        return digits.isBlank() ? null : digits;
     }
 
     private ConsultationRecord ensureConsultationRecord(Appointment appointment) {
