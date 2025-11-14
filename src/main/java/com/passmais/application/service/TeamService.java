@@ -15,6 +15,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
@@ -94,6 +95,7 @@ public class TeamService {
                 .inviteCodeHash(hashedCode)
                 .maxUses(allowedMaxUses)
                 .usesRemaining(allowedMaxUses)
+                .displayCode(rawCode)
                 .secretaryFullName(normalizedSecretaryName)
                 .secretaryCorporateEmail(normalizedCorporateEmail)
                 .expiresAt(expiresAt)
@@ -246,6 +248,44 @@ public class TeamService {
         return links.stream()
                 .map(link -> new SecretaryListing(link.getSecretary(), link.getLinkedAt()))
                 .toList();
+    }
+
+    @Transactional
+    public List<InviteSummary> listActiveInvites(UUID doctorUserId) {
+        Instant now = Instant.now();
+        List<TeamInvite> invites = teamInviteRepository.findAllByDoctorId(doctorUserId);
+        List<TeamInvite> expiredToPersist = new ArrayList<>();
+        List<InviteSummary> availableInvites = new ArrayList<>();
+
+        for (TeamInvite invite : invites) {
+            if (invite.isExpired(now)) {
+                if (invite.getStatus() != TeamInviteStatus.EXPIRED) {
+                    invite.markExpired();
+                    expiredToPersist.add(invite);
+                }
+                continue;
+            }
+            if (!invite.isActive() || !invite.hasRemainingUses()) {
+                continue;
+            }
+            String displayCode = invite.getDisplayCode();
+            if (displayCode == null || displayCode.isBlank()) {
+                continue;
+            }
+            availableInvites.add(new InviteSummary(
+                    displayCode,
+                    invite.getStatus(),
+                    invite.getUsesRemaining(),
+                    invite.getExpiresAt(),
+                    invite.getSecretaryFullName(),
+                    invite.getSecretaryCorporateEmail()
+            ));
+        }
+
+        if (!expiredToPersist.isEmpty()) {
+            teamInviteRepository.saveAll(expiredToPersist);
+        }
+        return availableInvites;
     }
 
     @Transactional(readOnly = true)
@@ -412,6 +452,13 @@ public class TeamService {
                                  boolean linkUpdated) {}
 
     public record SecretaryListing(User secretary, Instant linkedAt) {}
+
+    public record InviteSummary(String code,
+                                TeamInviteStatus status,
+                                int usesRemaining,
+                                Instant expiresAt,
+                                String secretaryFullName,
+                                String secretaryCorporateEmail) {}
 
     public record DoctorListing(User doctor, DoctorProfile profile) {}
 }
