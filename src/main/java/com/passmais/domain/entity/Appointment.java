@@ -3,9 +3,12 @@ package com.passmais.domain.entity;
 import com.passmais.domain.enums.AppointmentStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
@@ -26,7 +29,7 @@ public class Appointment {
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "patient_id", nullable = false)
-    private PatientProfile patient;
+    private User patient;
 
     @ManyToOne
     @JoinColumn(name = "dependent_id")
@@ -38,6 +41,15 @@ public class Appointment {
     @Column(length = 500)
     private String observations;
 
+    @Column(length = 500)
+    private String reason;
+
+    @Column(name = "symptom_duration", length = 120)
+    private String symptomDuration;
+
+    @Column(name = "pre_consult_notes", columnDefinition = "TEXT")
+    private String preConsultNotes;
+
     @ManyToOne
     @JoinColumn(name = "rescheduled_from_id")
     private Appointment rescheduledFrom;
@@ -48,4 +60,40 @@ public class Appointment {
     private AppointmentStatus status = AppointmentStatus.PENDING;
 
     private BigDecimal value;
+
+    @Column(name = "booked_at")
+    private Instant bookedAt;
+
+    @Column(name = "patient_full_name", length = 160)
+    private String patientFullName;
+
+    @Column(name = "patient_cpf", length = 14)
+    private String patientCpf;
+
+    @Column(name = "patient_birth_date")
+    private LocalDate patientBirthDate;
+
+    @Column(name = "patient_cell_phone", length = 20)
+    private String patientCellPhone;
+
+    @Column(name = "location", length = 160)
+    private String location;
+
+    @CreationTimestamp
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    private Instant updatedAt;
+
+    private Instant finalizedAt;
+
+    @ManyToOne
+    @JoinColumn(name = "updated_by_user_id")
+    private User updatedBy;
+
+    @Column(name = "canceled_at")
+    private Instant canceledAt;
+
+    @Column(name = "canceled_reason", length = 500)
+    private String canceledReason;
 }

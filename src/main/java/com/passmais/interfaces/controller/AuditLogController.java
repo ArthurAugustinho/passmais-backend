@@ -19,9 +19,8 @@ public class AuditLogController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('SUPERADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRATOR')")
     public ResponseEntity<List<AuditLog>> listAll() {
         return ResponseEntity.ok(auditLogRepository.findAll());
     }
 }
-

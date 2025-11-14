@@ -30,7 +30,7 @@ public class User {
     @Column(nullable = false, length = 160)
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false, columnDefinition = "TEXT")
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -38,6 +38,17 @@ public class User {
     private Role role;
 
     private Instant lgpdAcceptedAt;
+
+    private Instant emailVerifiedAt;
+
+    @Column(length = 64)
+    private String verificationCode;
+
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 14)
+    private String cpf;
 
     @CreationTimestamp
     private Instant createdAt;

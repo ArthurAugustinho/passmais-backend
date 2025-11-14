@@ -2,6 +2,7 @@ package com.passmais.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -29,4 +30,7 @@ public class ModerationLog {
 
     @Builder.Default
     private Instant createdAt = Instant.now();
+
+    @UpdateTimestamp
+    private Instant updatedAt;
 }
