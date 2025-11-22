@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS patient_files (
+    id UUID PRIMARY KEY,
+    full_name VARCHAR(160) NOT NULL,
+    cpf VARCHAR(14) NOT NULL UNIQUE,
+    birth_date DATE NOT NULL,
+    mother_name VARCHAR(160),
+    sex VARCHAR(20),
+    email VARCHAR(160),
+    contact_phone VARCHAR(30) NOT NULL,
+    full_address VARCHAR(255),
+    has_legal_responsible BOOLEAN,
+    responsible_full_name VARCHAR(160),
+    responsible_relationship VARCHAR(80),
+    responsible_cpf VARCHAR(14),
+    responsible_phone VARCHAR(30),
+    health_insurance_name VARCHAR(120),
+    health_insurance_card_number VARCHAR(60),
+    health_insurance_code VARCHAR(60),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);

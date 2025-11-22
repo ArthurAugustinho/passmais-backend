@@ -1,34 +1,36 @@
 services:
   db:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: passmais-db
     environment:
       POSTGRES_DB: passmais
       POSTGRES_USER: passmais
       POSTGRES_PASSWORD: passmais
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U passmais"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    restart: unless-stopped
+    restart: always
 
-  pgadmin:
-    image: dpage/pgadmin4:8
-    container_name: passmais-pgadmin
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: passmais-api
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@local
-      PGADMIN_DEFAULT_PASSWORD: admin
+      # Datasource aponta para o serviço 'db' do compose
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/passmais
+      DB_USERNAME: ${DB_USERNAME:-passmais}
+      DB_PASSWORD: ${DB_PASSWORD:-passmais}
+      JWT_SECRET: ${JWT_SECRET:-change-me}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-local-dev-access-key}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-local-dev-secret-key}
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_S3_BUCKET: ${AWS_S3_BUCKET:-passmais-local-bucket}
     ports:
-      - "5050:80"
+      - "8080:8080"
     depends_on:
-      db:
-        condition: service_healthy
-    restart: unless-stopped
+      - db
 
 volumes:
   db-data:

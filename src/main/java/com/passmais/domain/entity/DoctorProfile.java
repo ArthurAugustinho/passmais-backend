@@ -2,6 +2,8 @@ package com.passmais.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -33,11 +35,47 @@ public class DoctorProfile {
     @Column(length = 500)
     private String bio;
 
+    @Column(length = 20)
+    private String phone;
+
+    @Column(length = 14, unique = true)
+    private String cpf;
+
+    private java.time.LocalDate birthDate;
+
+    @Column(columnDefinition = "TEXT")
+    private String photoUrl;
+
+    private java.math.BigDecimal consultationPrice;
+
+    @Column(name = "clinic_name", length = 160)
+    private String clinicName;
+
+    @Column(name = "clinic_street_number", length = 160)
+    private String clinicStreetAndNumber;
+
+    @Column(name = "clinic_city", length = 120)
+    private String clinicCity;
+
+    @Column(name = "clinic_postal_code", length = 20)
+    private String clinicPostalCode;
+
+    @CreationTimestamp
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    private Instant updatedAt;
+
     @Column(nullable = false)
     @Builder.Default
     private boolean approved = false;
 
     private Instant approvedAt;
+
+    private Instant rejectedAt;
+
+    @Column(length = 500)
+    private String failureDescription;
 
     @OneToMany(mappedBy = "doctor", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

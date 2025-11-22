@@ -72,5 +72,8 @@ public class JwtService {
     public String getSubject(String token) {
         return parse(token).getBody().getSubject();
     }
-}
 
+    public Instant getExpiration(String token) {
+        return parse(token).getBody().getExpiration().toInstant();
+    }
+}

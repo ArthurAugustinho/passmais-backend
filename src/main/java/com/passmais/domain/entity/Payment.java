@@ -4,6 +4,8 @@ import com.passmais.domain.enums.PaymentMethod;
 import com.passmais.domain.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -41,4 +43,10 @@ public class Payment {
     private String receipt;
 
     private Instant paidAt;
+
+    @CreationTimestamp
+    private Instant createdAt;
+
+    @UpdateTimestamp
+    private Instant updatedAt;
 }

@@ -24,6 +24,8 @@ public class AdminApprovalService {
         DoctorProfile d = doctorRepo.findById(doctorId).orElseThrow();
         d.setApproved(true);
         d.setApprovedAt(Instant.now());
+        d.setRejectedAt(null);
+        d.setFailureDescription(null);
         return doctorRepo.save(d);
     }
 
@@ -33,5 +35,24 @@ public class AdminApprovalService {
         c.setApprovedAt(Instant.now());
         return clinicRepo.save(c);
     }
-}
 
+    public DoctorProfile rejectDoctor(UUID doctorId, String failureDescription) {
+        DoctorProfile doctor = doctorRepo.findById(doctorId)
+                .orElseThrow(() -> new java.util.NoSuchElementException("Doctor not found"));
+        Instant rejectionTime = Instant.now();
+        doctor.setApproved(false);
+        doctor.setApprovedAt(null);
+        doctor.setRejectedAt(rejectionTime);
+        String sanitizedReason = (failureDescription == null || failureDescription.isBlank()) ? null : failureDescription.trim();
+        doctor.setFailureDescription(sanitizedReason);
+        return doctorRepo.save(doctor);
+    }
+
+    public Clinic rejectClinic(UUID clinicId) {
+        Clinic clinic = clinicRepo.findById(clinicId).orElseThrow();
+        Instant rejectionTime = Instant.now();
+        clinic.setApproved(false);
+        clinic.setApprovedAt(rejectionTime);
+        return clinicRepo.save(clinic);
+    }
+}

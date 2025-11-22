@@ -1,6 +1,7 @@
 package com.passmais.infrastructure.security;
 
 import com.passmais.domain.entity.User;
+import com.passmais.domain.util.EmailUtils;
 import com.passmais.infrastructure.repository.UserRepository;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,18 +24,19 @@ public class CustomUserDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByEmail(username)
+        String normalizedEmail = EmailUtils.normalize(username);
+        User user = userRepository.findByEmailIgnoreCase(normalizedEmail != null ? normalizedEmail : username)
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário não encontrado"));
         Collection<? extends GrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().name()));
+        // Conta nunca é bloqueada por tentativas: marca sempre como não bloqueada
         return new org.springframework.security.core.userdetails.User(
                 user.getEmail(),
                 user.getPassword(),
-                true,
-                true,
-                true,
-                user.getAccountLockedUntil() == null || user.getAccountLockedUntil().isBefore(java.time.Instant.now()),
+                true,  // enabled
+                true,  // accountNonExpired
+                true,  // credentialsNonExpired
+                true,  // accountNonLocked
                 authorities
         );
     }
 }
-
