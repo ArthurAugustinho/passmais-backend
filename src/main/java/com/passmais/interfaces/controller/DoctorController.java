@@ -8,6 +8,7 @@ import com.passmais.infrastructure.repository.PatientProfileRepository;
 import com.passmais.infrastructure.repository.ReviewRepository;
 import com.passmais.interfaces.dto.DoctorPublicProfileDTO;
 import com.passmais.interfaces.dto.PendingDoctorDTO;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -84,19 +85,19 @@ public class DoctorController {
     }
 
     @PreAuthorize("hasRole('DOCTOR')")
-    @PutMapping("/{id}")
-    public ResponseEntity<DoctorPublicProfileDTO> updateProfile(@PathVariable UUID id, @RequestBody DoctorPublicProfileDTO dto) {
-        DoctorProfile d = doctorRepo.findById(id).orElseThrow();
-        d.setBio(dto.bio());
-        d.setSpecialty(dto.specialty());
-        d.setCrm(dto.crm());
-        d.setConsultationPrice(dto.consultationPrice());
-        d.setClinicName(dto.clinicName());
-        d.setClinicStreetAndNumber(dto.clinicStreetAndNumber());
-        d.setClinicCity(dto.clinicCity());
-        d.setClinicPostalCode(dto.clinicPostalCode());
-        DoctorProfile saved = doctorRepo.save(d);
-        return ResponseEntity.ok(toPublic(saved));
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<DoctorPublicProfileDTO> updateProfile(@PathVariable UUID id, @RequestBody DoctorPublicProfileDTO dto) throws java.io.IOException {
+        DoctorProfile updated = updateDoctorProfile(id, dto, null);
+        return ResponseEntity.ok(toPublic(updated));
+    }
+
+    @PreAuthorize("hasRole('DOCTOR')")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DoctorPublicProfileDTO> updateProfileWithPhoto(@PathVariable UUID id,
+                                                                         @RequestPart("doctor") DoctorPublicProfileDTO dto,
+                                                                         @RequestPart(value = "photo", required = false) MultipartFile photo) throws java.io.IOException {
+        DoctorProfile updated = updateDoctorProfile(id, dto, photo);
+        return ResponseEntity.ok(toPublic(updated));
     }
 
     private DoctorPublicProfileDTO toPublic(DoctorProfile d) {
@@ -158,13 +159,40 @@ public class DoctorController {
     @PostMapping("/{id}/photo")
     public ResponseEntity<DoctorPublicProfileDTO> uploadPhoto(@PathVariable UUID id, @RequestParam("file") MultipartFile file) throws java.io.IOException {
         DoctorProfile d = doctorRepo.findById(id).orElseThrow();
-        java.nio.file.Path dir = java.nio.file.Paths.get("uploads");
-        java.nio.file.Files.createDirectories(dir);
-        String filename = id + "-" + java.util.UUID.randomUUID() + "-" + file.getOriginalFilename();
-        java.nio.file.Path path = dir.resolve(filename);
-        file.transferTo(path.toFile());
-        d.setPhotoUrl("/uploads/" + filename);
+        storeDoctorPhoto(d, file);
         DoctorProfile saved = doctorRepo.save(d);
         return ResponseEntity.ok(toPublic(saved));
+    }
+
+    private DoctorProfile updateDoctorProfile(UUID id, DoctorPublicProfileDTO dto, MultipartFile photo) throws java.io.IOException {
+        DoctorProfile doctor = doctorRepo.findById(id).orElseThrow();
+        applyDoctorProfileData(doctor, dto);
+        if (photo != null && !photo.isEmpty()) {
+            storeDoctorPhoto(doctor, photo);
+        }
+        return doctorRepo.save(doctor);
+    }
+
+    private void applyDoctorProfileData(DoctorProfile doctor, DoctorPublicProfileDTO dto) {
+        doctor.setBio(dto.bio());
+        doctor.setSpecialty(dto.specialty());
+        doctor.setCrm(dto.crm());
+        doctor.setConsultationPrice(dto.consultationPrice());
+        doctor.setClinicName(dto.clinicName());
+        doctor.setClinicStreetAndNumber(dto.clinicStreetAndNumber());
+        doctor.setClinicCity(dto.clinicCity());
+        doctor.setClinicPostalCode(dto.clinicPostalCode());
+    }
+
+    private void storeDoctorPhoto(DoctorProfile doctor, MultipartFile file) throws java.io.IOException {
+        if (file == null || file.isEmpty()) {
+            return;
+        }
+        java.nio.file.Path dir = java.nio.file.Paths.get("uploads");
+        java.nio.file.Files.createDirectories(dir);
+        String filename = doctor.getId() + "-" + java.util.UUID.randomUUID() + "-" + file.getOriginalFilename();
+        java.nio.file.Path path = dir.resolve(filename);
+        file.transferTo(path.toFile());
+        doctor.setPhotoUrl("/uploads/" + filename);
     }
 }
