@@ -138,7 +138,10 @@ public class AppointmentController {
     @PreAuthorize("hasRole('DOCTOR')")
     @GetMapping("/doctor/{doctorId}")
     public ResponseEntity<List<AppointmentResponseDTO>> listForDoctor(@PathVariable UUID doctorId, @RequestParam(name = "status", required = false) com.passmais.domain.enums.AppointmentStatus status) {
-        DoctorProfile doctor = doctorRepo.findById(doctorId).orElseThrow();
+        DoctorProfile doctor = doctorRepo.findById(doctorId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Médico não encontrado para o id informado"));
         List<Appointment> list = status == null ? appointmentRepository.findByDoctor(doctor) : appointmentRepository.findByDoctorAndStatus(doctor, status);
         return ResponseEntity.ok(list.stream().map(appointmentMapper::toResponse).toList());
     }
