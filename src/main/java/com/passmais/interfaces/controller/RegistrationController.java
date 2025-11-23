@@ -128,7 +128,7 @@ public class RegistrationController {
                 .cpf(dto.cpf())
                 .birthDate(dto.birthDate())
                 .photoUrl(dto.photoUrl())
-                .consultationPrice(dto.consultationPrice())
+                .consultationPrice(null)
                 .clinicName(dto.clinicName())
                 .clinicStreetAndNumber(dto.streetAndNumber())
                 .clinicCity(dto.city())
