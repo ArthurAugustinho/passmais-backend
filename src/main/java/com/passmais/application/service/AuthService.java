@@ -145,9 +145,10 @@ public class AuthService {
         claims.put("role", user.getRole().name());
         claims.put("userId", user.getId().toString());
         if (user.getRole() == Role.DOCTOR) {
-            doctorProfileRepository.findByUserId(user.getId())
-                    .map(profile -> profile.getId().toString())
-                    .ifPresent(id -> claims.put("doctorId", id));
+            doctorProfileRepository.findByUserId(user.getId()).ifPresentOrElse(profile -> {
+                claims.put("doctorId", profile.getId().toString());
+                claims.put("approved", profile.isApproved());
+            }, () -> claims.put("approved", false));
         } else if (user.getRole() == Role.SECRETARY) {
             List<DoctorSecretary> links =
                     doctorSecretaryRepository.findAllByIdSecretaryIdAndActiveTrue(user.getId());
