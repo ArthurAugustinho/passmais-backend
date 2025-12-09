@@ -25,7 +25,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
 
-    @Value("${cors.allowed-origins:https://www.passmais.com.br,http://localhost:3000}")
+    @Value("${cors.allowed-origins:https://www.passmais.com.br,https://www.codexgo.com.br,http://localhost:3000}")
     private String[] allowedOrigins;
 
     public SecurityConfig(JwtAuthenticationFilter jwtFilter) {
