@@ -9,6 +9,8 @@ spring:
     properties:
       hibernate:
         jdbc.time_zone: UTC
+        type:
+          json_format_mapper: org.hibernate.type.format.jackson.JacksonJsonFormatMapper
     open-in-view: false
   jackson:
     serialization:
@@ -23,13 +25,20 @@ server:
   port: 8080
 
 security:
-  jwt:
-    secret: ${JWT_SECRET:d4a94c1d02b64f8a9f5d2d5a3e2f4b6c0a1d2e3f4a5b6c7d8e9f0a1b2c3d4e5}
-    issuer: passmais-api
-    access-token-minutes: 60
-    refresh-token-hours: 24
+    jwt:
+      secret: ${JWT_SECRET:d4a94c1d02b64f8a9f5d2d5a3e2f4b6c0a1d2e3f4a5b6c7d8e9f0a1b2c3d4e5}
+      issuer: passmais-api
+      access-token-minutes: 43200 # 30 days
+      refresh-token-hours: 720 # 30 days
 
 logging:
   level:
     org.springframework.security: INFO
     org.hibernate.SQL: INFO
+
+aws:
+  access-key-id: ${AWS_ACCESS_KEY_ID:}
+  secret-access-key: ${AWS_SECRET_ACCESS_KEY:}
+  region: ${AWS_REGION:us-east-1}
+  s3:
+    bucket: ${AWS_S3_BUCKET:}

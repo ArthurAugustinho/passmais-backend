@@ -18,9 +18,10 @@ dependency-reduced-pom.xml
 # SO / temporários
 .DS_Store
 Thumbs.db
-*.log
+*.log 
 logs/
 
 # Ambiente
 .env
-
+*.env
+  
